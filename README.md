@@ -1,4 +1,4 @@
-# AIfred
+# AIfred (AiFred)
 
 A sophisticated AI-powered multibot orchestrator with Router → Planner → Executor architecture, capable of managing multiple construction management services (CompanyCam, AccuLynx, ECi Bolt, Slack) with full audit logging, disambiguation prompts, and shell command execution capabilities.
 
@@ -238,4 +238,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Built with Fastify, Next.js, Prisma, and OpenAI
 - Inspired by modern AI agent architectures
 - Designed for construction industry workflows
-- Named AIfred as a tribute to the AI assistant concept
+- Named AIfred as a tribute to my dad, "Alfred"
+- Built by cojovi & AlinaCode
