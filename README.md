@@ -1,3 +1,5 @@
+![Project AIfred](https://raw.githubusercontent.com/cojovi/AIfred/main/assets/project_aifred.png)
+
 # AIfred (AiFred)
 
 A sophisticated AI-powered multibot orchestrator with Router → Planner → Executor architecture, capable of managing multiple construction management services (CompanyCam, AccuLynx, ECi Bolt, Slack) with full audit logging, disambiguation prompts, and shell command execution capabilities.
