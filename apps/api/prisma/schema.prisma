@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  Message[]
+  tasks     Task[]
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  role           String   // user | assistant | system
+  content        String
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+}
+
+model Task {
+  id             String   @id @default(cuid())
+  service        String   // "companycam" | "acculynx" | "bolt" | "slack"
+  intent         String   // canonical intent
+  inputs         Json
+  status         String   // planned | awaiting_user | executing | done | error
+  result         Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  steps          Step[]
+  apiCalls       ApiCall[]
+  commandRuns    CommandRun[]
+}
+
+model Step {
+  id        String @id @default(cuid())
+  taskId    String
+  index     Int
+  action    String   // e.g., "companycam.search_project"
+  args      Json
+  output    Json?
+  status    String   // pending | running | done | error
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  task      Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  apiCalls  ApiCall[]
+  commandRuns CommandRun[]
+}
+
+model ApiCall {
+  id        String @id @default(cuid())
+  service   String
+  method    String
+  url       String
+  request   Json
+  response  Json?
+  status    Int?
+  latencyMs Int?
+  createdAt DateTime @default(now())
+  taskId    String?
+  task      Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  stepId    String?
+  step      Step?   @relation(fields: [stepId], references: [id], onDelete: Cascade)
+}
+
+model CommandRun {
+  id         String @id @default(cuid())
+  command    String
+  args       String?
+  cwd        String?
+  mode       String // SANDBOX|HOST
+  exitCode   Int?
+  stdout     String?
+  stderr     String?
+  durationMs Int?
+  createdAt  DateTime @default(now())
+  taskId     String?
+  task       Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  stepId     String?
+  step       Step?   @relation(fields: [stepId], references: [id], onDelete: Cascade)
+}
+
+model ServiceConfig {
+  id        String @id @default(cuid())
+  service   String @unique
+  enabled   Boolean @default(true)
+  openapiRef String // path to YAML/JSON (assets/openapi/*.yaml)
+  synonyms  String  // CSV or JSON list for routing
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

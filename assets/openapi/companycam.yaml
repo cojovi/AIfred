@@ -1,0 +1,762 @@
+# Build an OpenAPI 3.0.3 spec for the CompanyCam Core API (based on public docs).
+# We'll generate a JSON file so it's easy to consume in tooling; YAML can be produced on request.
+import json, os, datetime
+
+today = datetime.date.today().isoformat()
+
+oas = {
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CompanyCam Core API (Unofficial consolidated spec)",
+    "version": f"v2-{today}",
+    "description": (
+      "An OpenAPI 3.0.3 specification generated from the public CompanyCam docs to cover the Core API v2.\n\n"
+      "Notes:\n"
+      "• This spec is compiled from https://docs.companycam.com (Core API Reference & Guides) and may diverge slightly from CompanyCam's canonical OAS.\n"
+      "• CompanyCam publishes an official OpenAPI file; when in doubt, use theirs as source-of-truth.\n"
+      "• Some request bodies (create/update operations) follow the docs' pattern of wrapping attributes under a resource key, e.g., {\"project\": {...}} or {\"photo\": {...}}.\n"
+      "• List endpoints typically support pagination; if parameters are not documented here, they may still be supported by the API.\n"
+    ),
+    "contact": {
+      "name": "CompanyCam Developer Docs",
+      "url": "https://docs.companycam.com/"
+    },
+    "license": {
+      "name": "CompanyCam Terms",
+      "url": "https://companycam.com/terms"
+    }
+  },
+  "externalDocs": {
+    "description": "Developer documentation",
+    "url": "https://docs.companycam.com/"
+  },
+  "servers": [
+    {"url": "https://api.companycam.com/v2", "description": "CompanyCam Core API v2"},
+  ],
+  "tags": [
+    {"name": "Company"},
+    {"name": "Users"},
+    {"name": "Projects"},
+    {"name": "Photos"},
+    {"name": "Tags"},
+    {"name": "Templates"},
+    {"name": "Groups"},
+    {"name": "Documents"},
+    {"name": "Comments"},
+    {"name": "Checklists"},
+    {"name": "Webhooks"}
+  ],
+  "security": [{"bearerAuth": []}],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "token"
+      },
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://app.companycam.com/oauth/authorize",
+            "tokenUrl": "https://app.companycam.com/oauth/token",
+            "scopes": {
+              "read": "Read access",
+              "write": "Write access",
+              "destroy": "Delete access"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {"type": "string"},
+          "message": {"type": "string"},
+          "code": {"type": "integer"}
+        },
+        "additionalProperties": True
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "street_address_1": {"type": "string"},
+          "street_address_2": {"type": "string"},
+          "city": {"type": "string"},
+          "state": {"type": "string", "description": "2-letter state code"},
+          "postal_code": {"type": "string"},
+          "country": {"type": "string", "description": "ISO 3166-1 Alpha-2"}
+        }
+      },
+      "Coordinate": {
+        "type": "object",
+        "properties": {
+          "latitude": {"type": "number", "format": "float"},
+          "longitude": {"type": "number", "format": "float"}
+        }
+      },
+      "ImageURI": {
+        "type": "object",
+        "properties": {
+          "type": {"type": "string", "description": "e.g., original, web, thumbnail, original_annotation"},
+          "uri": {"type": "string"},
+          "url": {"type": "string", "format": "uri"}
+        }
+      },
+      "ProjectIntegration": {
+        "type": "object",
+        "properties": {
+          "type": {"type": "string", "description": "Integration name"},
+          "relation_id": {"type": "string", "description": "External system identifier"}
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "email": {"type": "string", "format": "email"},
+          "phone": {"type": "string"},
+          "address": {"$ref": "#/components/schemas/Address"}
+        },
+        "additionalProperties": True
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "creator_id": {"type": "string"},
+          "creator_type": {"type": "string"},
+          "creator_name": {"type": "string"},
+          "commentable_id": {"type": "string"},
+          "commentable_type": {"type": "string"},
+          "status": {"type": "string", "enum": ["active"]},
+          "content": {"type": "string"},
+          "created_at": {"type": "integer", "format": "int64"},
+          "updated_at": {"type": "integer", "format": "int64"}
+        }
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "status": {"type": "string", "enum": ["active", "cancelled", "deleted"]},
+          "address": {"$ref": "#/components/schemas/Address"},
+          "logo": {"type": "array", "items": {"$ref": "#/components/schemas/ImageURI"}}
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "company_id": {"type": "string"},
+          "email_address": {"type": "string", "format": "email"},
+          "status": {"type": "string", "enum": ["active", "deleted"]},
+          "first_name": {"type": "string"},
+          "last_name": {"type": "string"},
+          "profile_image": {"type": "array", "items": {"$ref": "#/components/schemas/ImageURI"}},
+          "phone_number": {"type": "string"},
+          "created_at": {"type": "integer", "format": "int64"},
+          "updated_at": {"type": "integer", "format": "int64"},
+          "user_url": {"type": "string", "format": "uri"}
+        }
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "company_id": {"type": "string"},
+          "creator_id": {"type": "string"},
+          "creator_type": {"type": "string"},
+          "creator_name": {"type": "string"},
+          "status": {"type": "string", "enum": ["active", "deleted"]},
+          "name": {"type": "string"},
+          "address": {"$ref": "#/components/schemas/Address"},
+          "coordinates": {"$ref": "#/components/schemas/Coordinate"},
+          "feature_image": {"type": "array", "items": {"$ref": "#/components/schemas/ImageURI"}},
+          "project_url": {"type": "string", "format": "uri"},
+          "public_url": {"type": "string", "format": "uri"},
+          "embedded_project_url": {"type": "string", "format": "uri"},
+          "integrations": {"type": "array", "items": {"$ref": "#/components/schemas/ProjectIntegration"}},
+          "primary_contact": {"$ref": "#/components/schemas/Contact"},
+          "slug": {"type": "string"},
+          "public": {"type": "boolean"},
+          "notepad": {"type": "string"},
+          "geofence": {"type": "array", "items": {"$ref": "#/components/schemas/Coordinate"}},
+          "created_at": {"type": "integer", "format": "int64"},
+          "updated_at": {"type": "integer", "format": "int64"}
+        }
+      },
+      "ProjectCreate": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "address": {"$ref": "#/components/schemas/Address"},
+              "coordinates": {"$ref": "#/components/schemas/Coordinate"},
+              "public": {"type": "boolean"},
+              "notepad": {"type": "string"},
+              "primary_contact": {"$ref": "#/components/schemas/Contact"}
+            },
+            "required": ["name"]
+          }
+        },
+        "required": ["project"]
+      },
+      "ProjectUpdate": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "address": {"$ref": "#/components/schemas/Address"},
+              "coordinates": {"$ref": "#/components/schemas/Coordinate"},
+              "public": {"type": "boolean"},
+              "notepad": {"type": "string"},
+              "primary_contact": {"$ref": "#/components/schemas/Contact"}
+            }
+          }
+        },
+        "required": ["project"]
+      },
+      "Photo": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "company_id": {"type": "string"},
+          "creator_id": {"type": "string"},
+          "creator_type": {"type": "string"},
+          "creator_name": {"type": "string"},
+          "project_id": {"type": "string"},
+          "processing_status": {"type": "string", "enum": ["pending", "processing", "processed", "processing_error", "duplicate"]},
+          "coordinates": {"$ref": "#/components/schemas/Coordinate"},
+          "uris": {"type": "array", "items": {"$ref": "#/components/schemas/ImageURI"}},
+          "hash": {"type": "string", "description": "MD5 hash"},
+          "description": {"type": "string"},
+          "internal": {"type": "boolean"},
+          "captured_at": {"type": "integer", "format": "int64"},
+          "created_at": {"type": "integer", "format": "int64"},
+          "updated_at": {"type": "integer", "format": "int64"},
+          "photo_url": {"type": "string", "format": "uri"}
+        }
+      },
+      "PhotoCreate": {
+        "type": "object",
+        "properties": {
+          "photo": {
+            "type": "object",
+            "properties": {
+              "uri": {"type": "string", "description": "Publicly accessible image URL OR data URI"},
+              "captured_at": {"type": "integer", "format": "int64"},
+              "description": {"type": "string"},
+              "internal": {"type": "boolean"},
+              "coordinates": {"$ref": "#/components/schemas/Coordinate"},
+              "tags": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["uri"]
+          }
+        },
+        "required": ["photo"]
+      },
+      "PhotoUpdate": {
+        "type": "object",
+        "properties": {
+          "photo": {
+            "type": "object",
+            "properties": {
+              "captured_at": {"type": "integer", "format": "int64"},
+              "description": {"type": "string"},
+              "internal": {"type": "boolean"},
+              "coordinates": {"$ref": "#/components/schemas/Coordinate"}
+            }
+          }
+        },
+        "required": ["photo"]
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "creator_id": {"type": "string"},
+          "creator_type": {"type": "string"},
+          "company_id": {"type": "string"},
+          "project_id": {"type": "string"},
+          "name": {"type": "string"},
+          "url": {"type": "string", "format": "uri"},
+          "content_type": {"type": "string"},
+          "byte_size": {"type": "integer"},
+          "created_at": {"type": "integer", "format": "int64"},
+          "updated_at": {"type": "integer", "format": "int64"}
+        }
+      },
+      "Tag": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "company_id": {"type": "string"},
+          "value": {"type": "string", "description": "Tag name/value"},
+          "created_at": {"type": "integer", "format": "int64"},
+          "updated_at": {"type": "integer", "format": "int64"}
+        }
+      },
+      "Group": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "company_id": {"type": "string"},
+          "name": {"type": "string"},
+          "users": {"type": "array", "items": {"$ref": "#/components/schemas/User"}},
+          "status": {"type": "string", "enum": ["active", "deleted"]},
+          "created_at": {"type": "integer", "format": "int64"},
+          "updated_at": {"type": "integer", "format": "int64"},
+          "group_url": {"type": "string", "format": "uri"}
+        }
+      },
+      "Webhook": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "company_id": {"type": "string"},
+          "url": {"type": "string", "format": "uri"},
+          "scopes": {"type": "array", "items": {"type": "string"}},
+          "token": {"type": "string", "description": "Secret used to sign payloads"},
+          "enabled": {"type": "boolean"}
+        }
+      },
+      "Invitation": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "email": {"type": "string", "format": "email"},
+          "status": {"type": "string"},
+          "created_at": {"type": "integer", "format": "int64"}
+        },
+        "additionalProperties": True
+      },
+      "ChecklistTemplate": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "description": {"type": "string"}
+        },
+        "additionalProperties": True
+      },
+      "ChecklistTask": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "completed": {"type": "boolean"},
+          "completed_at": {"type": "integer", "format": "int64"}
+        },
+        "additionalProperties": True
+      },
+      "Checklist": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "project_id": {"type": "string"},
+          "name": {"type": "string"},
+          "status": {"type": "string"},
+          "tasks": {"type": "array", "items": {"$ref": "#/components/schemas/ChecklistTask"}},
+          "created_at": {"type": "integer", "format": "int64"},
+          "updated_at": {"type": "integer", "format": "int64"}
+        },
+        "additionalProperties": True
+      }
+    },
+    "parameters": {
+      "ProjectId": {"name": "project_id", "in": "path", "required": True, "schema": {"type": "string"}},
+      "PhotoId": {"name": "id", "in": "path", "required": True, "schema": {"type": "string"}, "description": "Photo ID"},
+      "UserId": {"name": "id", "in": "path", "required": True, "schema": {"type": "string"}, "description": "User ID"},
+      "GroupId": {"name": "id", "in": "path", "required": True, "schema": {"type": "string"}, "description": "Group ID"},
+      "TagId": {"name": "id", "in": "path", "required": True, "schema": {"type": "string"}, "description": "Tag ID"},
+      "ProjectPathId": {"name": "id", "in": "path", "required": True, "schema": {"type": "string"}, "description": "Project ID"},
+      "WebhookId": {"name": "id", "in": "path", "required": True, "schema": {"type": "string"}, "description": "Webhook ID"},
+      "ChecklistId": {"name": "id", "in": "path", "required": True, "schema": {"type": "string"}, "description": "Checklist ID"}
+    }
+  },
+  "paths": {}
+}
+
+paths = oas["paths"]
+
+# Company
+paths["/company"] = {
+  "get": {
+    "tags": ["Company"],
+    "summary": "Retrieve Company",
+    "operationId": "getCompany",
+    "responses": {
+      "200": {"description": "Company", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Company"}}}},
+      "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+      "403": {"description": "Forbidden", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
+    }
+  }
+}
+
+# Users
+paths["/users/current"] = {
+  "get": {
+    "tags": ["Users"],
+    "summary": "Retrieve Current User",
+    "operationId": "getCurrentUser",
+    "responses": {
+      "200": {"description": "User", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/User"}}}},
+      "401": {"description": "Unauthorized", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
+    }
+  }
+}
+paths["/users"] = {
+  "get": {
+    "tags": ["Users"],
+    "summary": "List All Users",
+    "operationId": "listUsers",
+    "responses": {
+      "200": {"description": "List of users", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/User"}}}}}
+    }
+  },
+  "post": {
+    "tags": ["Users"],
+    "summary": "Create User",
+    "operationId": "createUser",
+    "requestBody": {
+      "required": True,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "type": "object",
+                "properties": {
+                  "email_address": {"type": "string", "format": "email"},
+                  "first_name": {"type": "string"},
+                  "last_name": {"type": "string"},
+                  "phone_number": {"type": "string"}
+                },
+                "required": ["email_address"]
+              }
+            },
+            "required": ["user"]
+          }
+        }
+      }
+    },
+    "responses": {
+      "201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/User"}}}},
+      "400": {"description": "Bad Request", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
+    }
+  }
+}
+paths["/users/{id}"] = {
+  "parameters": [{"$ref": "#/components/parameters/UserId"}],
+  "get": {
+    "tags": ["Users"],
+    "summary": "Retrieve User",
+    "operationId": "getUser",
+    "responses": {
+      "200": {"description": "User", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/User"}}}},
+      "404": {"description": "Not Found", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
+    }
+  },
+  "put": {
+    "tags": ["Users"],
+    "summary": "Update User",
+    "operationId": "updateUser",
+    "requestBody": {
+      "required": True,
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {"user": {"type": "object", "properties": {
+              "email_address": {"type": "string", "format": "email"},
+              "first_name": {"type": "string"},
+              "last_name": {"type": "string"},
+              "phone_number": {"type": "string"}
+            }}},
+            "required": ["user"]
+          }
+        }
+      }
+    },
+    "responses": {"200": {"description": "Updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/User"}}}}}
+  },
+  "delete": {
+    "tags": ["Users"],
+    "summary": "Delete User",
+    "operationId": "deleteUser",
+    "responses": {"204": {"description": "Deleted"}}
+  }
+}
+
+# Projects
+paths["/projects"] = {
+  "get": {
+    "tags": ["Projects"],
+    "summary": "List Projects",
+    "operationId": "listProjects",
+    "responses": {
+      "200": {"description": "List of projects", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Project"}}}}}
+    }
+  },
+  "post": {
+    "tags": ["Projects"],
+    "summary": "Create Project",
+    "operationId": "createProject",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProjectCreate"}}}},
+    "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Project"}}}}}
+  }
+}
+paths["/projects/{id}"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}],
+  "get": {"tags": ["Projects"], "summary": "Retrieve Project", "operationId": "getProject", "responses": {
+    "200": {"description": "Project", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Project"}}}},
+    "404": {"description": "Not Found", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
+  }},
+  "put": {
+    "tags": ["Projects"],
+    "summary": "Update Project",
+    "operationId": "updateProject",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProjectUpdate"}}}},
+    "responses": {"200": {"description": "Updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Project"}}}}}
+  },
+  "delete": {"tags": ["Projects"], "summary": "Delete Project", "operationId": "deleteProject", "responses": {"204": {"description": "Deleted"}}}
+}
+paths["/projects/{id}/archive"] = {
+  "patch": {
+    "tags": ["Projects"],
+    "summary": "Archive Project",
+    "operationId": "archiveProject",
+    "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}],
+    "responses": {"200": {"description": "Archived", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Project"}}}}}
+  }
+}
+paths["/projects/{id}/restore"] = {
+  "put": {
+    "tags": ["Projects"],
+    "summary": "Restore Project",
+    "operationId": "restoreProject",
+    "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}],
+    "responses": {"200": {"description": "Restored", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Project"}}}}}
+  }
+}
+paths["/projects/{project_id}/photos"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectId"}],
+  "get": {
+    "tags": ["Photos"],
+    "summary": "List Photos on Project",
+    "operationId": "listProjectPhotos",
+    "responses": {"200": {"description": "List of photos", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Photo"}}}}}}
+  },
+  "post": {
+    "tags": ["Photos"],
+    "summary": "Add Photo to Project",
+    "operationId": "createProjectPhoto",
+    "requestBody": {
+      "required": True,
+      "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PhotoCreate"}}}
+    },
+    "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Photo"}}}}}
+  }
+}
+paths["/projects/{id}/users"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}],
+  "get": {
+    "tags": ["Projects"],
+    "summary": "List assigned users",
+    "operationId": "listProjectUsers",
+    "responses": {"200": {"description": "List of users", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/User"}}}}}}
+  }
+}
+paths["/projects/{id}/users/{user_id}"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}, {"name": "user_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+  "put": {"tags": ["Projects"], "summary": "Assign a user to a project", "operationId": "assignUserToProject", "responses": {"204": {"description": "Assigned"}}},
+  "delete": {"tags": ["Projects"], "summary": "Remove assigned user from project", "operationId": "removeUserFromProject", "responses": {"204": {"description": "Removed"}}}
+}
+paths["/projects/{id}/notepad"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}],
+  "put": {
+    "tags": ["Projects"],
+    "summary": "Update the project notepad",
+    "operationId": "updateProjectNotepad",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"notepad": {"type": "string"}}, "required": ["notepad"]}}}},
+    "responses": {"200": {"description": "Updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Project"}}}}}
+  }
+}
+paths["/projects/{id}/collaborators"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}],
+  "get": {
+    "tags": ["Projects"],
+    "summary": "List project collaborators",
+    "operationId": "listProjectCollaborators",
+    "responses": {"200": {"description": "List of collaborators (users or groups)", "content": {"application/json": {"schema": {"type": "array", "items": {"oneOf": [{"$ref": "#/components/schemas/User"}, {"$ref": "#/components/schemas/Group"}]}}}}}}
+  }
+}
+paths["/projects/{id}/invitations"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}],
+  "get": {"tags": ["Projects"], "summary": "List project invitations", "operationId": "listProjectInvitations", "responses": {"200": {"description": "List of invitations", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Invitation"}}}}}}},
+  "post": {"tags": ["Projects"], "summary": "Create a new project invitation for collaboration", "operationId": "createProjectInvitation", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"invitation": {"type": "object", "properties": {"email": {"type": "string", "format": "email"}}, "required": ["email"]}}, "required": ["invitation"]}}}}, "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Invitation"}}}}}}
+}
+paths["/projects/{id}/labels"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}],
+  "get": {
+    "tags": ["Projects", "Tags"],
+    "summary": "List Project Labels",
+    "operationId": "listProjectLabels",
+    "responses": {"200": {"description": "Project labels", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Tag"}}}}}}
+  },
+  "post": {
+    "tags": ["Projects", "Tags"],
+    "summary": "Add Labels",
+    "operationId": "addProjectLabels",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"tags": {"type": "array", "items": {"type": "string"}}}, "required": ["tags"]}}}},
+    "responses": {"200": {"description": "Labels added", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Tag"}}}}}}
+  }
+}
+paths["/projects/{id}/labels/{tag_id}"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}, {"name": "tag_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+  "delete": {"tags": ["Projects", "Tags"], "summary": "Delete Label", "operationId": "deleteProjectLabel", "responses": {"204": {"description": "Deleted"}}}
+}
+paths["/projects/{id}/documents"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}],
+  "get": {"tags": ["Documents"], "summary": "List Project Documents", "operationId": "listProjectDocuments", "responses": {"200": {"description": "List of documents", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Document"}}}}}}},
+  "post": {
+    "tags": ["Documents"],
+    "summary": "Upload a Document",
+    "operationId": "uploadProjectDocument",
+    "requestBody": {
+      "required": True,
+      "content": {
+        "multipart/form-data": {
+          "schema": {
+            "type": "object",
+            "properties": {
+              "file": {"type": "string", "format": "binary"},
+              "name": {"type": "string"},
+              "content_type": {"type": "string"}
+            },
+            "required": ["file"]
+          }
+        }
+      }
+    },
+    "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Document"}}}}}
+  }
+}
+paths["/projects/{id}/comments"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectPathId"}],
+  "get": {"tags": ["Comments"], "summary": "List Project Comments", "operationId": "listProjectComments", "responses": {"200": {"description": "List of comments", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Comment"}}}}}}},
+  "post": {"tags": ["Comments"], "summary": "Add Project Comment", "operationId": "addProjectComment", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"comment": {"type": "object", "properties": {"content": {"type": "string"}}, "required": ["content"]}}, "required": ["comment"]}}}}, "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Comment"}}}}}}
+}
+paths["/projects/{project_id}/checklists"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectId"}],
+  "get": {"tags": ["Checklists"], "summary": "List Project Checklists", "operationId": "listProjectChecklists", "responses": {"200": {"description": "List of checklists", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Checklist"}}}}}}},
+  "post": {"tags": ["Checklists"], "summary": "Create Checklist on Project from a Checklist Template", "operationId": "createProjectChecklistFromTemplate", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"checklist": {"type": "object", "properties": {"template_id": {"type": "string"}}, "required": ["template_id"]}}, "required": ["checklist"]}}}}, "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Checklist"}}}}}}
+}
+paths["/projects/{project_id}/checklists/{id}"] = {
+  "parameters": [{"$ref": "#/components/parameters/ProjectId"}, {"$ref": "#/components/parameters/ChecklistId"}],
+  "get": {"tags": ["Checklists"], "summary": "Retrieve Project Checklist", "operationId": "getProjectChecklist", "responses": {"200": {"description": "Checklist", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Checklist"}}}}, "404": {"description": "Not Found", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}}}
+}
+
+# Photos
+paths["/photos"] = {
+  "get": {
+    "tags": ["Photos"],
+    "summary": "List Photos",
+    "operationId": "listPhotos",
+    "parameters": [
+      {"name": "project_id", "in": "query", "schema": {"type": "string"}, "required": False, "description": "Filter by project"}
+    ],
+    "responses": {"200": {"description": "List of photos", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Photo"}}}}}}
+  }
+}
+paths["/photos/{id}"] = {
+  "parameters": [{"$ref": "#/components/parameters/PhotoId"}],
+  "get": {"tags": ["Photos"], "summary": "Retrieve Photo", "operationId": "getPhoto", "responses": {"200": {"description": "Photo", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Photo"}}}}}},
+  "put": {"tags": ["Photos"], "summary": "Update Photo", "operationId": "updatePhoto", "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PhotoUpdate"}}}}, "responses": {"200": {"description": "Updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Photo"}}}}}},
+  "delete": {"tags": ["Photos"], "summary": "Delete Photo", "operationId": "deletePhoto", "responses": {"204": {"description": "Deleted"}}}
+}
+paths["/photos/{id}/tags"] = {
+  "parameters": [{"$ref": "#/components/parameters/PhotoId"}],
+  "get": {"tags": ["Photos", "Tags"], "summary": "List Photo Tags", "operationId": "listPhotoTags", "responses": {"200": {"description": "List of tags", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Tag"}}}}}}},
+  "post": {"tags": ["Photos", "Tags"], "summary": "Add Tags to Photo", "operationId": "addPhotoTags", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"tags": {"type": "array", "items": {"type": "string"}}}, "required": ["tags"]}}}}, "responses": {"200": {"description": "Updated tags", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Tag"}}}}}}}
+}
+paths["/photos/{id}/comments"] = {
+  "parameters": [{"$ref": "#/components/parameters/PhotoId"}],
+  "get": {"tags": ["Photos", "Comments"], "summary": "List Photo Comments", "operationId": "listPhotoComments", "responses": {"200": {"description": "List of comments", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Comment"}}}}}}},
+  "post": {"tags": ["Photos", "Comments"], "summary": "Add Comment to Photo", "operationId": "addPhotoComment", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"comment": {"type": "object", "properties": {"content": {"type": "string"}}, "required": ["content"]}}, "required": ["comment"]}}}}, "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Comment"}}}}}}
+}
+paths["/photos/{id}/description"] = {
+  "parameters": [{"$ref": "#/components/parameters/PhotoId"}],
+  "post": {"tags": ["Photos"], "summary": "Update Photo Description", "operationId": "updatePhotoDescription", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"description": {"type": "string"}}, "required": ["description"]}}}}, "responses": {"200": {"description": "Updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Photo"}}}}}}
+}
+
+# Tags
+paths["/tags"] = {
+  "get": {"tags": ["Tags"], "summary": "List All Tags", "operationId": "listTags", "responses": {"200": {"description": "List of tags", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Tag"}}}}}}},
+  "post": {"tags": ["Tags"], "summary": "Create Tag", "operationId": "createTag", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"tag": {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]}}, "required": ["tag"]}}}}, "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Tag"}}}}}}
+}
+paths["/tags/{id}"] = {
+  "parameters": [{"$ref": "#/components/parameters/TagId"}],
+  "get": {"tags": ["Tags"], "summary": "Retrieve Tag", "operationId": "getTag", "responses": {"200": {"description": "Tag", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Tag"}}}}}},
+  "put": {"tags": ["Tags"], "summary": "Update Tag", "operationId": "updateTag", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"tag": {"type": "object", "properties": {"value": {"type": "string"}}}}, "required": ["tag"]}}}}, "responses": {"200": {"description": "Updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Tag"}}}}}},
+  "delete": {"tags": ["Tags"], "summary": "Delete a Tag", "operationId": "deleteTag", "responses": {"204": {"description": "Deleted"}}}
+}
+
+# Templates
+paths["/templates/checklists"] = {
+  "get": {"tags": ["Templates"], "summary": "List All Checklist Templates", "operationId": "listChecklistTemplates", "responses": {"200": {"description": "List of templates", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/ChecklistTemplate"}}}}}}}
+}
+
+# Groups
+paths["/groups"] = {
+  "get": {"tags": ["Groups"], "summary": "List Groups", "operationId": "listGroups", "responses": {"200": {"description": "List of groups", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Group"}}}}}}},
+  "post": {"tags": ["Groups"], "summary": "Create Group", "operationId": "createGroup", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"group": {"type": "object", "properties": {"name": {"type": "string"}, "user_ids": {"type": "array", "items": {"type": "string"}}}, "required": ["name"]}}, "required": ["group"]}}}}, "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Group"}}}}}}
+}
+paths["/groups/{id}"] = {
+  "parameters": [{"$ref": "#/components/parameters/GroupId"}],
+  "get": {"tags": ["Groups"], "summary": "Retrieve Group", "operationId": "getGroup", "responses": {"200": {"description": "Group", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Group"}}}}}},
+  "put": {"tags": ["Groups"], "summary": "Update Group", "operationId": "updateGroup", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"group": {"type": "object", "properties": {"name": {"type": "string"}, "user_ids": {"type": "array", "items": {"type": "string"}}}}}, "required": ["group"]}}}}, "responses": {"200": {"description": "Updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Group"}}}}}},
+  "delete": {"tags": ["Groups"], "summary": "Delete a Group", "operationId": "deleteGroup", "responses": {"204": {"description": "Deleted"}}}
+}
+
+# Webhooks
+paths["/webhooks"] = {
+  "get": {"tags": ["Webhooks"], "summary": "List Webhooks", "operationId": "listWebhooks", "responses": {"200": {"description": "List of webhooks", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Webhook"}}}}}}},
+  "post": {"tags": ["Webhooks"], "summary": "Create Webhook", "operationId": "createWebhook", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"webhook": {"type": "object", "properties": {"url": {"type": "string", "format": "uri"}, "scopes": {"type": "array", "items": {"type": "string"}}, "token": {"type": "string"}, "enabled": {"type": "boolean"}}, "required": ["url", "scopes"]}}, "required": ["webhook"]}}}}, "responses": {"201": {"description": "Created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Webhook"}}}}}}
+}
+paths["/webhooks/{id}"] = {
+  "parameters": [{"$ref": "#/components/parameters/WebhookId"}],
+  "get": {"tags": ["Webhooks"], "summary": "Retrieve Webhook", "operationId": "getWebhook", "responses": {"200": {"description": "Webhook", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Webhook"}}}}}},
+  "put": {"tags": ["Webhooks"], "summary": "Update Webhook", "operationId": "updateWebhook", "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "properties": {"webhook": {"type": "object", "properties": {"url": {"type": "string", "format": "uri"}, "scopes": {"type": "array", "items": {"type": "string"}}, "token": {"type": "string"}, "enabled": {"type": "boolean"}}}}, "required": ["webhook"]}}}}, "responses": {"200": {"description": "Updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Webhook"}}}}}},
+  "delete": {"tags": ["Webhooks"], "summary": "Delete Webhook", "operationId": "deleteWebhook", "responses": {"204": {"description": "Deleted"}}}
+}
+
+# Checklists (global)
+paths["/checklists"] = {
+  "get": {
+    "tags": ["Checklists"],
+    "summary": "List All Checklists",
+    "operationId": "listChecklists",
+    "parameters": [{"name": "project_id", "in": "query", "schema": {"type": "string"}, "required": False}],
+    "responses": {"200": {"description": "List of checklists", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Checklist"}}}}}}
+  }
+}
+
+oas["paths"] = paths
+
+# Save the file
+out_path = "/mnt/data/companycam-openapi.json"
+with open(out_path, "w") as f:
+    json.dump(oas, f, indent=2)
+
+out_path

@@ -1,0 +1,36 @@
+{
+  "service": "acculynx",
+  "openapiRef": "../../../assets/openapi/acculynx.yaml",
+  "enabled": true,
+  "synonyms": ["acculynx", "accu lynx", "accu", "lynx"],
+  "operations": {
+    "create_lead": {
+      "summary": "Create a new lead",
+      "method": "POST",
+      "path": "/api/leads",
+      "body": ["contact_info", "project_details"]
+    },
+    "update_lead": {
+      "summary": "Update an existing lead",
+      "method": "PUT",
+      "path": "/api/leads/{lead_id}",
+      "body": ["updates"]
+    },
+    "search_lead": {
+      "summary": "Search for leads",
+      "method": "GET",
+      "path": "/api/leads",
+      "query": ["name", "email", "phone"]
+    },
+    "get_lead": {
+      "summary": "Get lead details",
+      "method": "GET",
+      "path": "/api/leads/{lead_id}"
+    },
+    "list_leads": {
+      "summary": "List all leads",
+      "method": "GET",
+      "path": "/api/leads"
+    }
+  }
+}

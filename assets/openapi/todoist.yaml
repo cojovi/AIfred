@@ -1,0 +1,1236 @@
+# We'll build an OpenAPI 3.1 JSON spec for Todoist API v1 (unofficial), based on the docs at developer.todoist.com.
+# Create a large Python dict and dump it to /mnt/data/todoist-openapi-v1.json for download.
+import json, textwrap, datetime
+
+today = datetime.date.today().isoformat()
+
+spec = {
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Todoist API v1 (Unofficial OpenAPI)",
+    "version": "1.0.0-" + today,
+    "description": textwrap.dedent("""\
+      Unofficial OpenAPI 3.1 specification for the **Todoist API v1** (unified API), compiled from the public docs.
+      
+      **Base URL:** `https://api.todoist.com`
+      
+      **Auth:** OAuth 2.0 (authorization code) or personal token. All endpoints (except initial OAuth) require a `Bearer` token in the `Authorization` header.
+      
+      **Pagination:** Many list endpoints are cursor-based and return `next_cursor`. To fetch the next page, pass `cursor=<next_cursor>` with the same filters. Default page size is `limit=50`, max 200 unless otherwise stated.
+      
+      **Notes:**
+      - This file covers the unified **/api/v1** endpoint family plus the **/sync** endpoint.
+      - Schema fields are based on docs examples; some objects are abbreviated to the documented/publicly relevant fields.
+      - Webhooks are modeled via the top-level `webhooks` section per OpenAPI 3.1.
+      - This spec is **unofficial** and provided for developer convenience. Validate against Todoist's live docs before production use.
+    """).strip()
+  },
+  "externalDocs": {
+    "description": "Official Todoist API v1 documentation",
+    "url": "https://developer.todoist.com/api/v1/"
+  },
+  "servers": [
+    {"url": "https://api.todoist.com"}
+  ],
+  "security": [
+    {"todoistOAuth": ["data:read", "data:read_write", "task:add", "data:delete", "project:delete", "backups:read"]},
+    {"bearerAuth": []}
+  ],
+  "tags": [
+    {"name": "Authorization"},
+    {"name": "Sync"},
+    {"name": "Workspaces"},
+    {"name": "Projects"},
+    {"name": "Sections"},
+    {"name": "Tasks"},
+    {"name": "Labels"},
+    {"name": "Comments"},
+    {"name": "Templates"},
+    {"name": "Uploads"},
+    {"name": "User"},
+    {"name": "Activity"},
+    {"name": "Backups"},
+    {"name": "Emails"},
+    {"name": "IDs"}
+  ],
+  "paths": {},
+  "components": {
+    "securitySchemes": {
+      "todoistOAuth": {
+        "type": "oauth2",
+        "description": "OAuth 2.0 Authorization Code flow.\n\nAuthorize: `https://todoist.com/oauth/authorize`\nToken: `https://todoist.com/oauth/access_token`",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://todoist.com/oauth/authorize",
+            "tokenUrl": "https://todoist.com/oauth/access_token",
+            "scopes": {
+              "task:add": "Add tasks only.",
+              "data:read": "Read-only access to tasks, projects, labels, filters, etc.",
+              "data:read_write": "Read/write access (includes task:add and data:read).",
+              "data:delete": "Delete tasks, labels, filters, etc.",
+              "project:delete": "Delete projects.",
+              "backups:read": "List backups without MFA."
+            }
+          }
+        }
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "OAuth2 access token"
+      }
+    },
+    "parameters": {
+      "Cursor": {"name": "cursor", "in": "query", "schema": {"type": "string", "nullable": True}, "description": "Opaque cursor for next page."},
+      "Limit": {"name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 0, "maximum": 200, "default": 50}, "description": "Page size (default 50, max 200)."},
+      "PublicKey": {"name": "public_key", "in": "query", "schema": {"type": "string", "nullable": True}, "description": "Access via public share key when applicable."},
+      "MFAToken": {"name": "mfa_token", "in": "query", "schema": {"type": "string", "nullable": True}, "description": "MFA token for endpoints requiring MFA if scope isn't `backups:read`."}
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {"type": "string"},
+          "error_code": {"type": "string", "nullable": True},
+          "http_code": {"type": "integer", "nullable": True}
+        },
+        "additionalProperties": True
+      },
+      "Color": {
+        "oneOf": [
+          {"type": "string", "description": "Named color (e.g., `charcoal`, `berry_red`)."},
+          {"type": "integer", "description": "Internal color index."},
+          {"type": "object", "properties": {
+            "name": {"type": "string"},
+            "hex": {"type": "string"},
+            "database_index": {"type": "integer"}
+          }}
+        ]
+      },
+      "Due": {
+        "type": "object",
+        "properties": {
+          "date": {"type": "string", "description": "YYYY-MM-DD, or RFC3339 timestamp (Z for fixed timezone)."},
+          "timezone": {"type": ["string", "null"]},
+          "is_recurring": {"type": "boolean"},
+          "string": {"type": "string"},
+          "lang": {"type": "string"}
+        },
+        "additionalProperties": True
+      },
+      "Deadline": {
+        "type": "object",
+        "properties": {
+          "date": {"type": "string", "description": "YYYY-MM-DD"}
+        },
+        "required": ["date"]
+      },
+      "Duration": {
+        "type": "object",
+        "properties": {
+          "amount": {"type": ["integer", "null"]},
+          "unit": {"type": ["string", "null"], "enum": ["minute", "day", None]}
+        }
+      },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "project_id": {"type": "string"},
+          "section_id": {"type": ["string", "null"]},
+          "parent_id": {"type": ["string", "null"]},
+          "content": {"type": "string"},
+          "description": {"type": "string"},
+          "labels": {"type": "array", "items": {"type": "string"}},
+          "priority": {"type": "integer", "minimum": 1, "maximum": 4},
+          "child_order": {"type": "integer"},
+          "url": {"type": "string"},
+          "added_at": {"type": "string", "format": "date-time"},
+          "completed_at": {"type": ["string", "null"], "format": "date-time"},
+          "updated_at": {"type": "string", "format": "date-time"},
+          "due": {"$ref": "#/components/schemas/Due"},
+          "deadline": {"$ref": "#/components/schemas/Deadline"},
+          "duration": {"$ref": "#/components/schemas/Duration"},
+          "assignee_id": {"type": ["string", "null"]},
+          "is_deleted": {"type": ["boolean", "null"]},
+          "is_collapsed": {"type": ["boolean", "null"]}
+        },
+        "additionalProperties": True
+      },
+      "TaskCreate": {
+        "type": "object",
+        "properties": {
+          "content": {"type": "string"},
+          "description": {"type": "string"},
+          "project_id": {"type": ["string", "integer"]},
+          "section_id": {"type": ["string", "integer", "null"]},
+          "parent_id": {"type": ["string", "integer", "null"]},
+          "labels": {"type": "array", "items": {"type": "string"}},
+          "priority": {"type": "integer", "minimum": 1, "maximum": 4},
+          "order": {"type": ["integer", "null"]},
+          "due_string": {"type": ["string", "null"]},
+          "due_date": {"type": ["string", "null"]},
+          "due_datetime": {"type": ["string", "null"]},
+          "due_lang": {"type": ["string", "null"]},
+          "deadline": {"$ref": "#/components/schemas/Deadline"},
+          "duration": {"$ref": "#/components/schemas/Duration"},
+          "assignee_id": {"type": ["string", "null"]}
+        },
+        "required": ["content"]
+      },
+      "TaskUpdate": {
+        "allOf": [
+          {"$ref": "#/components/schemas/TaskCreate"}
+        ]
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "parent_id": {"type": ["string", "null"]},
+          "color": {"$ref": "#/components/schemas/Color"},
+          "is_favorite": {"type": "boolean"},
+          "view_style": {"type": "string"},
+          "is_archived": {"type": ["boolean", "null"]},
+          "order": {"type": ["integer", "null"]}
+        },
+        "additionalProperties": True
+      },
+      "ProjectCreate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "description": {"type": "string"},
+          "parent_id": {"type": ["string", "integer", "null"]},
+          "color": {"$ref": "#/components/schemas/Color"},
+          "is_favorite": {"type": "boolean"},
+          "view_style": {"type": "string"}
+        },
+        "required": ["name"]
+      },
+      "ProjectUpdate": {"$ref": "#/components/schemas/ProjectCreate"},
+      "Section": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "project_id": {"type": "string"},
+          "name": {"type": "string"},
+          "order": {"type": "integer"},
+          "is_archived": {"type": ["boolean", "null"]},
+          "is_collapsed": {"type": ["boolean", "null"]}
+        },
+        "additionalProperties": True
+      },
+      "SectionCreate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "project_id": {"type": ["string", "integer"]},
+          "order": {"type": ["integer", "null"]}
+        },
+        "required": ["name", "project_id"]
+      },
+      "SectionUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": ["string", "null"]},
+          "order": {"type": ["integer", "null"]}
+        }
+      },
+      "Label": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "color": {"type": "string"},
+          "order": {"type": "integer"},
+          "is_favorite": {"type": "boolean"}
+        }
+      },
+      "LabelCreate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "maxLength": 128},
+          "order": {"type": ["integer", "null"]},
+          "color": {"$ref": "#/components/schemas/Color"},
+          "is_favorite": {"type": "boolean"}
+        },
+        "required": ["name"]
+      },
+      "LabelUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {"type": ["string", "null"]},
+          "order": {"type": ["integer", "null"]},
+          "color": {"oneOf": [
+            {"type": "string"},
+            {"type": "integer"},
+            {"type": "null"}
+          ]},
+          "is_favorite": {"type": ["boolean", "null"]}
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "posted_uid": {"type": "string"},
+          "content": {"type": "string"},
+          "file_attachment": {"type": ["object", "null"]},
+          "uids_to_notify": {"type": "array", "items": {"type": "string"}},
+          "is_deleted": {"type": "boolean"},
+          "posted_at": {"type": "string"},
+          "reactions": {"type": "object"},
+          "project_id": {"type": ["string", "null"]},
+          "task_id": {"type": ["string", "null"]}
+        },
+        "additionalProperties": True
+      },
+      "CommentCreate": {
+        "type": "object",
+        "properties": {
+          "content": {"type": "string"},
+          "project_id": {"type": ["string", "integer", "null"]},
+          "task_id": {"type": ["string", "integer", "null"]},
+          "file_attachment": {"type": ["object", "null"]},
+          "uids_to_notify": {"type": "array", "items": {"type": "string"}}
+        },
+        "required": ["content"]
+      },
+      "CommentUpdate": {
+        "type": "object",
+        "properties": {"content": {"type": "string"}}
+      },
+      "UploadRequest": {
+        "type": "object",
+        "properties": {
+          "file_name": {"type": ["string", "null"]},
+          "project_id": {"type": ["string", "null"]}
+        },
+        "required": []
+      },
+      "UploadResponse": {
+        "type": "object",
+        "properties": {
+          "file_name": {"type": "string"},
+          "file_type": {"type": "string"},
+          "file_size": {"type": "integer"},
+          "file_url": {"type": "string"},
+          "resource_type": {"type": "string"}
+        },
+        "additionalProperties": True
+      },
+      "QuickAddRequest": {
+        "type": "object",
+        "properties": {
+          "text": {"type": "string"},
+          "note": {"type": ["string", "null"]},
+          "reminder": {"type": ["string", "null"]},
+          "auto_reminder": {"type": ["boolean", "null"]},
+          "meta": {"type": ["boolean", "null"]}
+        },
+        "required": ["text"]
+      },
+      "NotificationSettingUpdate": {
+        "type": "object",
+        "properties": {
+          "notification_type": {"type": "string", "enum": [
+            "note_added","item_assigned","item_completed","item_uncompleted","karma_level",
+            "share_invitation_sent","share_invitation_accepted","share_invitation_rejected",
+            "share_invitation_blocked_by_project_limit","user_left_project","user_removed_from_project",
+            "teams_workspace_upgraded","teams_workspace_canceled","teams_workspace_payment_failed",
+            "workspace_invitation_created","workspace_invitation_accepted","workspace_invitation_rejected",
+            "project_archived","project_moved","removed_from_workspace","workspace_deleted","message",
+            "workspace_user_joined_by_domain"
+          ]},
+          "service": {"type": "string", "enum": ["email","push"]},
+          "token": {"type": ["string", "null"]},
+          "dont_notify": {"type": ["boolean", "null"]}
+        },
+        "required": ["notification_type","service"]
+      },
+      "ActivityLog": {
+        "type": "object",
+        "properties": {
+          "object_type": {"type": "string"},
+          "object_id": {"type": "string"},
+          "v2_object_id": {"type": ["string","null"]},
+          "event_type": {"type": "string"},
+          "event_date": {"type": "string", "format": "date-time"},
+          "id": {"type": "integer"},
+          "parent_project_id": {"type": ["string","null"]},
+          "v2_parent_project_id": {"type": ["string","null"]},
+          "parent_item_id": {"type": ["string","null"]},
+          "v2_parent_item_id": {"type": ["string","null"]},
+          "initiator_id": {"type": ["string","null"]},
+          "extra_data": {"type": "object"},
+          "source": {"type": "string"}
+        }
+      },
+      "ActivityQuery": {
+        "type": "object",
+        "properties": {
+          "object_type": {"type": ["string","null"]},
+          "object_id": {"type": ["string","integer","null"]},
+          "parent_project_id": {"type": ["string","integer","null"]},
+          "parent_item_id": {"type": ["string","integer","null"]},
+          "include_parent_object": {"type": "boolean", "default": False},
+          "include_child_objects": {"type": "boolean", "default": False},
+          "initiator_id": {"type": ["integer","null"]},
+          "initiator_id_null": {"type": ["boolean","null"]},
+          "event_type": {"type": ["string","null"]},
+          "ensure_last_state": {"type": "boolean", "default": False},
+          "annotate_notes": {"type": "boolean", "default": False},
+          "annotate_parents": {"type": "boolean", "default": False},
+          "cursor": {"type": ["string","null"]},
+          "limit": {"type": "integer", "minimum": 0, "maximum": 200, "default": 50}
+        }
+      },
+      "ActivityList": {
+        "type": "object",
+        "properties": {
+          "results": {"type": "array", "items": {"$ref": "#/components/schemas/ActivityLog"}},
+          "next_cursor": {"type": ["string", "null"]}
+        }
+      },
+      "Backup": {
+        "type": "object",
+        "properties": {
+          "version": {"type": "string"},
+          "url": {"type": "string"}
+        }
+      },
+      "EmailGetOrCreate": {
+        "type": "object",
+        "properties": {"obj_type": {"type": "string", "enum": ["project","project_comments","task"]},
+                       "obj_id": {"type": ["string","integer"]}},
+        "required": ["obj_type", "obj_id"]
+      },
+      "EmailAddress": {"type": "object", "properties": {"email": {"type": "string"}}},
+      "User": {
+        "type": "object",
+        "additionalProperties": True,
+        "description": "User object as returned by /api/v1/user."
+      }
+    }
+  },
+  "webhooks": {
+    "todoistEvent": {
+      "post": {
+        "summary": "Todoist webhook callback (configure in App Console)",
+        "description": "Todoist sends POST requests with event payloads. Validate `X-Todoist-Hmac-SHA256` using your client_secret.",
+        "requestBody": {
+          "required": True,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "event_name": {"type": "string", "enum": [
+                    "item:added","item:updated","item:deleted","item:completed","item:uncompleted",
+                    "note:added","note:updated","note:deleted",
+                    "project:added","project:updated","project:deleted","project:archived","project:unarchived",
+                    "section:added","section:updated","section:deleted","section:archived","section:unarchived",
+                    "label:added","label:deleted","label:updated",
+                    "filter:added","filter:deleted","filter:updated",
+                    "reminder:fired"
+                  ]},
+                  "user_id": {"type": "string"},
+                  "event_data": {"type": "object"},
+                  "event_data_extra": {"type": ["object","null"]},
+                  "initiator": {"type": "object"},
+                  "triggered_at": {"type": "string", "format": "date-time"},
+                  "version": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {"description": "Acknowledge receipt of the event."}
+        }
+      }
+    }
+  }
+}
+
+paths = spec["paths"]
+
+def ok_json(schema_ref=None, description="Successful Response"):
+    if schema_ref is None:
+        return {"description": description}
+    return {"description": description, "content": {"application/json": {"schema": schema_ref}}}
+
+def ok_list(item_ref):
+    return ok_json({"type": "array", "items": item_ref})
+
+def null_200(desc="Successful Response (may be null)"):
+    return {"description": desc, "content": {"application/json": {"schema": {"nullable": True}}}}
+
+# ----- Authorization / Tokens -----
+paths["/api/v1/access_tokens/migrate_personal_token"] = {
+  "post": {
+    "tags": ["Authorization"],
+    "summary": "Migrate personal token",
+    "operationId": "migratePersonalToken",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {
+      "type": "object",
+      "properties": {
+        "client_id": {"type": "string"},
+        "client_secret": {"type": "string"},
+        "personal_token": {"type": "string"},
+        "scope": {"type": "string"}
+      },
+      "required": ["client_id","client_secret","personal_token","scope"]
+    }}}},
+    "responses": {
+      "200": ok_json({"type": "object", "properties": {"access_token": {"type": "string"}, "token_type": {"type": "string"}}}),
+      "400": ok_json({"$ref": "#/components/schemas/Error"}),
+      "401": ok_json({"$ref": "#/components/schemas/Error"}),
+      "403": ok_json({"$ref": "#/components/schemas/Error"}),
+      "404": ok_json({"$ref": "#/components/schemas/Error"})
+    }
+  }
+}
+paths["/api/v1/access_tokens"] = {
+  "delete": {
+    "tags": ["Authorization"],
+    "summary": "Revoke Access Token",
+    "operationId": "revokeAccessToken",
+    "parameters": [
+      {"name": "client_id", "in": "query", "required": True, "schema": {"type": "string"}},
+      {"name": "client_secret", "in": "query", "required": True, "schema": {"type": "string"}},
+      {"name": "access_token", "in": "query", "required": True, "schema": {"type": "string"}}
+    ],
+    "responses": {
+      "200": null_200(),
+      "400": ok_json({"$ref": "#/components/schemas/Error"}),
+      "401": ok_json({"$ref": "#/components/schemas/Error"}),
+      "403": ok_json({"$ref": "#/components/schemas/Error"}),
+      "404": ok_json({"$ref": "#/components/schemas/Error"})
+    }
+  }
+}
+
+# ----- Sync -----
+paths["/api/v1/sync"] = {
+  "post": {
+    "tags": ["Sync"],
+    "summary": "Sync: read resources or execute commands",
+    "operationId": "sync",
+    "requestBody": {
+      "required": True,
+      "content": {
+        "application/x-www-form-urlencoded": {
+          "schema": {
+            "type": "object",
+            "description": "Use either (sync_token + resource_types) to read or (commands) to write.",
+            "properties": {
+              "sync_token": {"type": "string", "description": "Use '*' for full sync; otherwise use previous sync_token."},
+              "resource_types": {"type": "string", "description": "JSON-encoded array of resource types, e.g. '[\"all\"]'."},
+              "commands": {"type": "string", "description": "JSON-encoded array of command objects."}
+            },
+            "oneOf": [
+              {"required": ["sync_token","resource_types"]},
+              {"required": ["commands"]}
+            ]
+          }
+        }
+      }
+    },
+    "responses": {
+      "200": ok_json({"type": "object", "description": "Sync response object with requested resources, sync_status, temp_id_mapping, sync_token, etc.", "additionalProperties": True}),
+      "400": ok_json({"$ref": "#/components/schemas/Error"})
+    }
+  }
+}
+
+# ----- Workspaces -----
+paths["/api/v1/workspaces/invitations/delete"] = {
+  "post": {
+    "tags": ["Workspaces"],
+    "summary": "Delete Invitation",
+    "operationId": "workspaceDeleteInvitation",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {
+      "type": "object",
+      "properties": {"workspace_id": {"type": "integer"}, "user_email": {"type": "string"}},
+      "required": ["workspace_id","user_email"]
+    }}}},
+    "responses": {"200": ok_json({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/workspaces/invitations/all"] = {
+  "get": {
+    "tags": ["Workspaces"],
+    "summary": "All Invitations",
+    "operationId": "workspaceInvitationsAll",
+    "responses": {"200": ok_list({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/workspaces/invitations/{invite_code}/accept"] = {
+  "put": {
+    "tags": ["Workspaces"],
+    "summary": "Accept Invitation",
+    "operationId": "workspaceInvitationAccept",
+    "parameters": [{"name": "invite_code", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "responses": {"200": ok_json({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/workspaces/invitations/{invite_code}/reject"] = {
+  "put": {
+    "tags": ["Workspaces"],
+    "summary": "Reject Invitation",
+    "operationId": "workspaceInvitationReject",
+    "parameters": [{"name": "invite_code", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "responses": {"200": ok_json({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/workspaces/{workspace_id}/projects/archived"] = {
+  "get": {
+    "tags": ["Workspaces"],
+    "summary": "Archived Projects (Workspace)",
+    "operationId": "workspaceArchivedProjects",
+    "parameters": [
+      {"name": "workspace_id", "in": "path", "required": True, "schema": {"type": "integer"}},
+      {"$ref": "#/components/parameters/Cursor"},
+      {"$ref": "#/components/parameters/Limit"}
+    ],
+    "responses": {"200": ok_json({"type": "object", "additionalProperties": True}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/workspaces/{workspace_id}/projects/active"] = {
+  "get": {
+    "tags": ["Workspaces"],
+    "summary": "Active Projects (Workspace)",
+    "operationId": "workspaceActiveProjects",
+    "parameters": [
+      {"name": "workspace_id", "in": "path", "required": True, "schema": {"type": "integer"}},
+      {"$ref": "#/components/parameters/Cursor"},
+      {"$ref": "#/components/parameters/Limit"}
+    ],
+    "responses": {"200": ok_json({"type": "object", "additionalProperties": True}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/workspaces/plan_details"] = {
+  "get": {
+    "tags": ["Workspaces"],
+    "summary": "Workspace Plan Details",
+    "operationId": "workspacePlanDetails",
+    "parameters": [{"name": "workspace_id", "in": "query", "required": True, "schema": {"type": "integer"}}],
+    "responses": {"200": ok_json({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/workspaces/invitations"] = {
+  "get": {
+    "tags": ["Workspaces"],
+    "summary": "Workspace invitations (emails)",
+    "operationId": "workspaceInvitations",
+    "parameters": [{"name": "workspace_id", "in": "query", "required": True, "schema": {"type": "integer"}}],
+    "responses": {"200": ok_list({"type": "string"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/workspaces/users"] = {
+  "get": {
+    "tags": ["Workspaces"],
+    "summary": "List workspace users",
+    "operationId": "workspaceUsers",
+    "parameters": [
+      {"name": "workspace_id", "in": "query", "required": False, "schema": {"type": ["integer","null"]}},
+      {"$ref": "#/components/parameters/Cursor"},
+      {"$ref": "#/components/parameters/Limit"}
+    ],
+    "responses": {"200": ok_json({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/workspaces/join"] = {
+  "post": {
+    "tags": ["Workspaces"],
+    "summary": "Join workspace",
+    "operationId": "workspaceJoin",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {
+      "type": "object",
+      "properties": {"invite_code": {"type": ["string","null"]}, "workspace_id": {"type": ["integer","null"]}}
+    }}}},
+    "responses": {"200": ok_json({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/workspaces/logo"] = {
+  "post": {
+    "tags": ["Workspaces"],
+    "summary": "Update workspace logo",
+    "operationId": "workspaceUpdateLogo",
+    "requestBody": {"required": True, "content": {"multipart/form-data": {"schema": {
+      "type": "object",
+      "properties": {"file": {"type": "string", "format": "binary"}, "workspace_id": {"type": "integer"}},
+      "required": ["file"]
+    }}}},
+    "responses": {"200": null_200(), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+
+# ----- Projects -----
+paths["/api/v1/projects"] = {
+  "get": {
+    "tags": ["Projects"],
+    "summary": "Get Projects",
+    "operationId": "getProjects",
+    "parameters": [{"$ref": "#/components/parameters/Cursor"},{"$ref": "#/components/parameters/Limit"}],
+    "responses": {"200": ok_list({"$ref": "#/components/schemas/Project"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  },
+  "post": {
+    "tags": ["Projects"],
+    "summary": "Create Project",
+    "operationId": "createProject",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProjectCreate"}}}},
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Project"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/projects/archived"] = {
+  "get": {
+    "tags": ["Projects"],
+    "summary": "Get Archived Projects",
+    "operationId": "getArchivedProjects",
+    "parameters": [{"$ref": "#/components/parameters/Cursor"},{"$ref": "#/components/parameters/Limit"}],
+    "responses": {"200": ok_list({"$ref": "#/components/schemas/Project"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/projects/{project_id}"] = {
+  "get": {
+    "tags": ["Projects"],
+    "summary": "Get Project",
+    "operationId": "getProject",
+    "parameters": [{"name": "project_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Project"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  },
+  "post": {
+    "tags": ["Projects"],
+    "summary": "Update Project",
+    "operationId": "updateProject",
+    "parameters": [{"name": "project_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProjectUpdate"}}}},
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Project"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  },
+  "delete": {
+    "tags": ["Projects"],
+    "summary": "Delete Project",
+    "operationId": "deleteProject",
+    "parameters": [{"name": "project_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "responses": {"200": null_200(), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/projects/{project_id}/archive"] = {
+  "post": {
+    "tags": ["Projects"],
+    "summary": "Archive Project",
+    "operationId": "archiveProject",
+    "parameters": [{"name": "project_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "responses": {"200": null_200(), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/projects/{project_id}/unarchive"] = {
+  "post": {
+    "tags": ["Projects"],
+    "summary": "Unarchive Project",
+    "operationId": "unarchiveProject",
+    "parameters": [{"name": "project_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "responses": {"200": null_200(), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/projects/{project_id}/collaborators"] = {
+  "get": {
+    "tags": ["Projects"],
+    "summary": "Get Project Collaborators",
+    "operationId": "getProjectCollaborators",
+    "parameters": [
+      {"name": "project_id", "in": "path", "required": True, "schema": {"type": "string"}},
+      {"$ref": "#/components/parameters/Cursor"},{"$ref": "#/components/parameters/Limit"}
+    ],
+    "responses": {"200": ok_json({"type": "object", "additionalProperties": True}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/projects/{project_id}/join"] = {
+  "post": {
+    "tags": ["Projects"],
+    "summary": "Join Shared Project",
+    "operationId": "joinProject",
+    "parameters": [{"name": "project_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "responses": {"200": ok_json({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/projects/{project_id}/full"] = {
+  "get": {
+    "tags": ["Projects"],
+    "summary": "Get Project (full)",
+    "operationId": "getProjectFull",
+    "parameters": [{"name": "project_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "responses": {"200": ok_json({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+
+# ----- Sections -----
+paths["/api/v1/sections"] = {
+  "get": {
+    "tags": ["Sections"],
+    "summary": "Get Sections",
+    "operationId": "getSections",
+    "parameters": [
+      {"name": "project_id", "in": "query", "required": False, "schema": {"type": ["string","integer","null"]}},
+      {"$ref": "#/components/parameters/Cursor"},{"$ref": "#/components/parameters/Limit"}
+    ],
+    "responses": {"200": ok_list({"$ref": "#/components/schemas/Section"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  },
+  "post": {
+    "tags": ["Sections"],
+    "summary": "Create Section",
+    "operationId": "createSection",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SectionCreate"}}}},
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Section"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/sections/{section_id}"] = {
+  "get": {
+    "tags": ["Sections"],
+    "summary": "Get Section",
+    "operationId": "getSection",
+    "parameters": [{"name": "section_id", "in": "path", "required": True, "schema": {"type": "string"}},{"$ref": "#/components/parameters/PublicKey"}],
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Section"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  },
+  "post": {
+    "tags": ["Sections"],
+    "summary": "Update Section",
+    "operationId": "updateSection",
+    "parameters": [{"name": "section_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SectionUpdate"}}}},
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Section"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  },
+  "delete": {
+    "tags": ["Sections"],
+    "summary": "Delete Section",
+    "operationId": "deleteSection",
+    "parameters": [{"name": "section_id", "in": "path", "required": True, "schema": {"type": "string"}}],
+    "responses": {"200": null_200(), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+
+# ----- Tasks -----
+paths["/api/v1/tasks"] = {
+  "get": {
+    "tags": ["Tasks"],
+    "summary": "Get Tasks",
+    "operationId": "getTasks",
+    "parameters": [
+      {"name": "project_id", "in": "query", "required": False, "schema": {"type": ["string","integer","null"]}},
+      {"name": "section_id", "in": "query", "required": False, "schema": {"type": ["string","integer","null"]}},
+      {"name": "parent_id", "in": "query", "required": False, "schema": {"type": ["string","integer","null"]}},
+      {"name": "label", "in": "query", "required": False, "schema": {"type": ["string","null"]}, "description": "Filter tasks by label name."},
+      {"name": "ids", "in": "query", "required": False, "schema": {"type": ["string","null"]}, "description": "Comma-separated task IDs to retrieve."},
+      {"$ref": "#/components/parameters/Cursor"},{"$ref": "#/components/parameters/Limit"}
+    ],
+    "responses": {"200": ok_json({"type": "object", "properties": {"items": {"type":"array","items":{"$ref":"#/components/schemas/Task"}}, "next_cursor": {"type":["string","null"]}}}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  },
+  "post": {
+    "tags": ["Tasks"],
+    "summary": "Create Task",
+    "operationId": "createTask",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TaskCreate"}}}},
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Task"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/tasks/filter"] = {
+  "get": {
+    "tags": ["Tasks"],
+    "summary": "Get Tasks By Filter",
+    "operationId": "getTasksByFilter",
+    "parameters": [
+      {"name": "query", "in": "query", "required": True, "schema": {"type": "string", "minLength": 1, "maxLength": 1024}, "description": "Filter expression."},
+      {"name": "lang", "in": "query", "required": False, "schema": {"type": ["string","null"]}, "description": "IETF language tag for the filter language."},
+      {"$ref": "#/components/parameters/Cursor"},{"$ref": "#/components/parameters/Limit"}
+    ],
+    "responses": {"200": ok_json({"type": "object", "properties": {"items": {"type":"array","items":{"$ref":"#/components/schemas/Task"}}, "next_cursor": {"type":["string","null"]}}}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/tasks/quick"] = {
+  "post": {
+    "tags": ["Tasks"],
+    "summary": "Quick Add",
+    "operationId": "quickAdd",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/QuickAddRequest"}}}},
+    "responses": {"200": ok_json({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/tasks/{task_id}"] = {
+  "get": {
+    "tags": ["Tasks"],
+    "summary": "Get Task",
+    "operationId": "getTask",
+    "parameters": [{"name": "task_id","in":"path","required":True,"schema":{"type":"string"}},{"$ref":"#/components/parameters/PublicKey"}],
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Task"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  },
+  "post": {
+    "tags": ["Tasks"],
+    "summary": "Update Task",
+    "operationId": "updateTask",
+    "parameters": [{"name": "task_id","in":"path","required":True,"schema":{"type":"string"}}],
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/TaskUpdate"}}}},
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Task"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  },
+  "delete": {
+    "tags": ["Tasks"],
+    "summary": "Delete Task",
+    "operationId": "deleteTask",
+    "parameters": [{"name": "task_id","in":"path","required":True,"schema":{"type":"string"}}],
+    "responses": {"200": null_200(), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/tasks/{task_id}/reopen"] = {"post": {"tags":["Tasks"],"summary":"Reopen Task","operationId":"reopenTask","parameters":[{"name":"task_id","in":"path","required":True,"schema":{"type":"string"}}],"responses":{"200": null_200(),"400": ok_json({"$ref":"#/components/schemas/Error"})}}}
+paths["/api/v1/tasks/{task_id}/close"]  = {"post": {"tags":["Tasks"],"summary":"Close Task","operationId":"closeTask","parameters":[{"name":"task_id","in":"path","required":True,"schema":{"type":"string"}}],"responses":{"200": null_200(),"400": ok_json({"$ref":"#/components/schemas/Error"})}}}
+paths["/api/v1/tasks/{task_id}/move"]   = {"post": {"tags":["Tasks"],"summary":"Move Task","operationId":"moveTask","parameters":[{"name":"task_id","in":"path","required":True,"schema":{"type":"string"}}],"requestBody":{"required":True,"content":{"application/json":{"schema":{"type":"object","properties":{"project_id":{"type":["string","null"]},"section_id":{"type":["string","null"]},"parent_id":{"type":["string","null"]}},"required":[]}}}},"responses":{"200": ok_json({"$ref":"#/components/schemas/Task"}),"400": ok_json({"$ref":"#/components/schemas/Error"})}}}
+
+# Completed tasks & stats
+paths["/api/v1/tasks/completed/by_completion_date"] = {
+  "get": {
+    "tags": ["Tasks"],
+    "summary": "Tasks completed by completion date",
+    "operationId": "tasksCompletedByCompletionDate",
+    "parameters": [
+      {"name":"since","in":"query","required":True,"schema":{"type":"string","format":"date-time"}},
+      {"name":"until","in":"query","required":True,"schema":{"type":"string","format":"date-time"}},
+      {"name":"workspace_id","in":"query","required":False,"schema":{"type":["integer","null"]}},
+      {"name":"project_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"name":"section_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"name":"parent_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"name":"filter_query","in":"query","required":False,"schema":{"type":["string","null"]}},
+      {"name":"filter_lang","in":"query","required":False,"schema":{"type":["string","null"]}},
+      {"$ref":"#/components/parameters/Cursor"},{"$ref":"#/components/parameters/Limit"},
+      {"$ref":"#/components/parameters/PublicKey"}
+    ],
+    "responses": {"200": ok_json({"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/Task"}},"next_cursor":{"type":["string","null"]}}}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/tasks/completed/by_due_date"] = {
+  "get": {
+    "tags": ["Tasks"],
+    "summary": "Tasks completed by due date",
+    "operationId": "tasksCompletedByDueDate",
+    "parameters": [
+      {"name":"since","in":"query","required":True,"schema":{"type":"string","format":"date-time"}},
+      {"name":"until","in":"query","required":True,"schema":{"type":"string","format":"date-time"}},
+      {"name":"workspace_id","in":"query","required":False,"schema":{"type":["integer","null"]}},
+      {"name":"project_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"name":"section_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"name":"parent_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"name":"filter_query","in":"query","required":False,"schema":{"type":["string","null"]}},
+      {"name":"filter_lang","in":"query","required":False,"schema":{"type":["string","null"]}},
+      {"$ref":"#/components/parameters/Cursor"},{"$ref":"#/components/parameters/Limit"},
+      {"$ref":"#/components/parameters/PublicKey"}
+    ],
+    "responses": {"200": ok_json({"type":"object","properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/Task"}},"next_cursor":{"type":["string","null"]}}}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/tasks/completed/stats"] = {
+  "get": {
+    "tags": ["Tasks"],
+    "summary": "Get productivity stats",
+    "operationId": "getProductivityStats",
+    "responses": {"200": ok_json({"type": "object"}), "400": ok_json({"$ref": "#/components/schemas/Error"})}
+  }
+}
+
+# ----- Labels -----
+paths["/api/v1/labels/shared"] = {
+  "get": {
+    "tags": ["Labels"],
+    "summary": "Shared Labels",
+    "operationId": "getSharedLabels",
+    "parameters": [{"$ref": "#/components/parameters/Cursor"},{"$ref": "#/components/parameters/Limit"}],
+    "responses": {"200": ok_json({"type": "object", "properties": {"results":{"type":"array","items":{"type":"string"}},"next_cursor":{"type":["string","null"]}}}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/labels"] = {
+  "get": {
+    "tags": ["Labels"],
+    "summary": "Get Labels",
+    "operationId": "getLabels",
+    "parameters": [{"$ref": "#/components/parameters/Cursor"},{"$ref": "#/components/parameters/Limit"}],
+    "responses": {"200": ok_list({"$ref": "#/components/schemas/Label"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  },
+  "post": {
+    "tags": ["Labels"],
+    "summary": "Create Label",
+    "operationId": "createLabel",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LabelCreate"}}}},
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Label"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/labels/{label_id}"] = {
+  "get": {
+    "tags": ["Labels"],
+    "summary": "Get Label",
+    "operationId": "getLabel",
+    "parameters": [{"name": "label_id", "in": "path", "required": True, "schema": {"type": "integer"}}],
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Label"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  },
+  "post": {
+    "tags": ["Labels"],
+    "summary": "Update Label",
+    "operationId": "updateLabel",
+    "parameters": [{"name": "label_id", "in": "path", "required": True, "schema": {"type": "integer"}}],
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/LabelUpdate"}}}},
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/Label"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  },
+  "delete": {
+    "tags": ["Labels"],
+    "summary": "Delete Label",
+    "operationId": "deleteLabel",
+    "parameters": [{"name": "label_id", "in": "path", "required": True, "schema": {"type": "integer"}}],
+    "responses": {"200": null_200(), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/labels/shared/remove"] = {
+  "post": {
+    "tags": ["Labels"],
+    "summary": "Shared Labels Remove",
+    "operationId": "removeSharedLabel",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object","properties": {"name": {"type": "string"}}, "required": ["name"]}}}},
+    "responses": {"200": null_200(), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/labels/shared/rename"] = {
+  "post": {
+    "tags": ["Labels"],
+    "summary": "Shared Labels Rename",
+    "operationId": "renameSharedLabel",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object","properties": {"name": {"type": "string"}, "new_name": {"type": "string"}}, "required": ["name","new_name"]}}}},
+    "responses": {"200": null_200(), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+
+# ----- Comments -----
+paths["/api/v1/comments"] = {
+  "get": {
+    "tags": ["Comments"],
+    "summary": "Get Comments",
+    "operationId": "getComments",
+    "parameters": [
+      {"name":"project_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"name":"task_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"$ref":"#/components/parameters/Cursor"},{"$ref":"#/components/parameters/Limit"}
+    ],
+    "responses": {"200": ok_list({"$ref":"#/components/schemas/Comment"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  },
+  "post": {
+    "tags": ["Comments"],
+    "summary": "Create Comment",
+    "operationId": "createComment",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref":"#/components/schemas/CommentCreate"}}}},
+    "responses": {"200": ok_json({"$ref":"#/components/schemas/Comment"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/comments/{comment_id}"] = {
+  "get": {
+    "tags": ["Comments"],
+    "summary": "Get Comment",
+    "operationId": "getComment",
+    "parameters": [{"name":"comment_id","in":"path","required":True,"schema":{"type":"string"}}],
+    "responses": {"200": ok_json({"$ref":"#/components/schemas/Comment"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  },
+  "post": {
+    "tags": ["Comments"],
+    "summary": "Update Comment",
+    "operationId": "updateComment",
+    "parameters": [{"name":"comment_id","in":"path","required":True,"schema":{"type":"string"}}],
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref":"#/components/schemas/CommentUpdate"}}}},
+    "responses": {"200": ok_json({"$ref":"#/components/schemas/Comment"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  },
+  "delete": {
+    "tags": ["Comments"],
+    "summary": "Delete Comment",
+    "operationId": "deleteComment",
+    "parameters": [{"name":"comment_id","in":"path","required":True,"schema":{"type":"string"}}],
+    "responses": {"200": null_200(), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+
+# ----- Templates -----
+paths["/api/v1/templates/import_into_project_from_template_id"] = {
+  "post": {
+    "tags": ["Templates"],
+    "summary": "Import Into Project From Template Id",
+    "operationId": "templatesImportById",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {
+      "type": "object", "properties": {"project_id":{"type":["string","integer"]},"template_id":{"type":"string"},"locale":{"type":["string","null"], "default":"en"}},
+      "required": ["project_id","template_id"]
+    }}}},
+    "responses": {"200": ok_json({"type":"object"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/templates/import_into_project_from_file"] = {
+  "post": {
+    "tags": ["Templates"],
+    "summary": "Import Into Project From File",
+    "operationId": "templatesImportFromFile",
+    "requestBody": {"required": True, "content": {"multipart/form-data": {"schema": {
+      "type":"object",
+      "properties": {"project_id":{"type":["string","integer"]},"file":{"type":"string","format":"binary"}},
+      "required": ["project_id","file"]
+    }}}},
+    "responses": {"200": ok_json({"type":"object"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/templates/create_project_from_file"] = {
+  "post": {
+    "tags": ["Templates"],
+    "summary": "Create Project From File",
+    "operationId": "templatesCreateProjectFromFile",
+    "requestBody": {"required": True, "content": {"multipart/form-data": {"schema": {
+      "type":"object",
+      "properties": {"name":{"type":"string"},"file":{"type":"string","format":"binary"}},
+      "required": ["name","file"]
+    }}}},
+    "responses": {"200": ok_json({"$ref":"#/components/schemas/Project"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/templates/file"] = {
+  "get": {
+    "tags": ["Templates"],
+    "summary": "Export As File",
+    "operationId": "templatesExportAsFile",
+    "parameters": [{"name":"project_id","in":"query","required":True,"schema":{"type":["string","integer"]}}, {"name":"use_relative_dates","in":"query","required":False,"schema":{"type":"boolean","default":True}}],
+    "responses": {"200": ok_json({"type":"string"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/templates/url"] = {
+  "get": {
+    "tags": ["Templates"],
+    "summary": "Export As URL",
+    "operationId": "templatesExportAsUrl",
+    "parameters": [{"name":"project_id","in":"query","required":True,"schema":{"type":["string","integer"]}}, {"name":"use_relative_dates","in":"query","required":False,"schema":{"type":"boolean","default":True}}],
+    "responses": {"200": ok_json({"type":"object","properties":{"file_name":{"type":"string"},"file_url":{"type":"string"}}}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+
+# ----- Uploads -----
+paths["/api/v1/uploads"] = {
+  "post": {
+    "tags": ["Uploads"],
+    "summary": "Upload File (pre-signed attachment)",
+    "operationId": "uploadsPost",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref":"#/components/schemas/UploadRequest"}}}},
+    "responses": {"200": ok_json({"$ref":"#/components/schemas/UploadResponse"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  },
+  "delete": {
+    "tags": ["Uploads"],
+    "summary": "Delete Upload",
+    "operationId": "uploadsDelete",
+    "parameters": [{"name":"file_url","in":"query","required":True,"schema":{"type":"string"}}],
+    "responses": {"200": ok_json({"type":"string","example":"ok"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+
+# ----- User -----
+paths["/api/v1/user"] = {
+  "get": {
+    "tags": ["User"],
+    "summary": "User Info",
+    "operationId": "getUserInfo",
+    "responses": {"200": ok_json({"$ref":"#/components/schemas/User"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/notification_setting"] = {
+  "put": {
+    "tags": ["User"],
+    "summary": "Update Notification Setting",
+    "operationId": "updateNotificationSetting",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref":"#/components/schemas/NotificationSettingUpdate"}}}},
+    "responses": {"200": ok_json({"type":"object"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+
+# ----- Activity -----
+paths["/api/v1/activities"] = {
+  "get": {
+    "tags": ["Activity"],
+    "summary": "Get Activity Logs",
+    "operationId": "getActivityLogs",
+    "parameters": [
+      {"name":"object_type","in":"query","required":False,"schema":{"type":["string","null"]}},
+      {"name":"object_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"name":"parent_project_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"name":"parent_item_id","in":"query","required":False,"schema":{"type":["string","integer","null"]}},
+      {"name":"include_parent_object","in":"query","required":False,"schema":{"type":"boolean","default":False}},
+      {"name":"include_child_objects","in":"query","required":False,"schema":{"type":"boolean","default":False}},
+      {"name":"initiator_id","in":"query","required":False,"schema":{"type":["integer","null"]}},
+      {"name":"initiator_id_null","in":"query","required":False,"schema":{"type":["boolean","null"]}},
+      {"name":"event_type","in":"query","required":False,"schema":{"type":["string","null"]}},
+      {"name":"ensure_last_state","in":"query","required":False,"schema":{"type":"boolean","default":False}},
+      {"name":"annotate_notes","in":"query","required":False,"schema":{"type":"boolean","default":False}},
+      {"name":"annotate_parents","in":"query","required":False,"schema":{"type":"boolean","default":False}},
+      {"$ref":"#/components/parameters/Cursor"},{"$ref":"#/components/parameters/Limit"}
+    ],
+    "responses": {"200": ok_json({"$ref": "#/components/schemas/ActivityList"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+
+# ----- Backups -----
+paths["/api/v1/backups"] = {
+  "get": {
+    "tags": ["Backups"],
+    "summary": "Get Backups",
+    "operationId": "getBackups",
+    "parameters": [{"$ref":"#/components/parameters/MFAToken"}],
+    "responses": {"200": ok_list({"$ref":"#/components/schemas/Backup"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+paths["/api/v1/backups/download"] = {
+  "get": {
+    "tags": ["Backups"],
+    "summary": "Download Backup",
+    "operationId": "downloadBackup",
+    "parameters": [{"name":"file","in":"query","required":True,"schema":{"type":"string"}, "description": "Backup URL value returned by /backups."}],
+    "responses": {"200": null_200(), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+
+# ----- Emails -----
+paths["/api/v1/emails"] = {
+  "put": {
+    "tags": ["Emails"],
+    "summary": "Email Get Or Create",
+    "operationId": "emailsGetOrCreate",
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {"$ref":"#/components/schemas/EmailGetOrCreate"}}}},
+    "responses": {"200": ok_json({"$ref":"#/components/schemas/EmailAddress"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  },
+  "delete": {
+    "tags": ["Emails"],
+    "summary": "Email Disable",
+    "operationId": "emailsDisable",
+    "parameters": [
+      {"name":"obj_type","in":"query","required":True,"schema":{"type":"string"}},
+      {"name":"obj_id","in":"query","required":True,"schema":{"type":["string","integer"]}}
+    ],
+    "responses": {"200": ok_json({"type":"object","properties":{"status":{"type":"string","example":"ok"}}}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+
+# ----- IDs mapping -----
+paths["/api/v1/ids_mapping/{object}/{ids}"] = {
+  "get": {
+    "tags": ["IDs"],
+    "summary": "ID mappings (v1<->v2)",
+    "operationId": "idsMapping",
+    "parameters": [
+      {"name":"object","in":"path","required":True,"schema":{"type":"string"}, "description":"Object type: tasks, comments, projects, sections, labels (see docs)."},
+      {"name":"ids","in":"path","required":True,"schema":{"type":"string"}, "description":"Comma-separated list of IDs (max 100)."}
+    ],
+    "responses": {"200": ok_list({"type":"object"}), "400": ok_json({"$ref":"#/components/schemas/Error"})}
+  }
+}
+
+# Save file
+out_path = "/mnt/data/todoist-openapi-v1.json"
+with open(out_path, "w", encoding="utf-8") as f:
+    json.dump(spec, f, indent=2, ensure_ascii=False)
+
+out_path

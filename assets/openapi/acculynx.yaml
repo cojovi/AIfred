@@ -1,0 +1,3072 @@
+openapi: 3.0.3
+info:
+  title: AccuLynx API
+  description: Comprehensive OpenAPI specification for AccuLynx REST API (covering v1 and v2 endpoints).
+  version: "1.0.0"
+servers:
+  - url: https://api.acculynx.com
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: "API Key"
+  schemas:
+    LeadCreationRequest:
+      type: object
+      required: [firstName]
+      properties:
+        firstName:
+          type: string
+          description: First name of the primary contact (Lead):contentReference[oaicite:119]{index=119}.
+          maxLength: 50
+        lastName:
+          type: string
+          description: Last name of the primary contact (Lead):contentReference[oaicite:120]{index=120}.
+          maxLength: 50
+          nullable: true
+        companyName:
+          type: string
+          description: Company name for the contact (if applicable):contentReference[oaicite:121]{index=121}.
+          maxLength: 100
+          nullable: true
+        phoneNumber1:
+          type: string
+          description: Primary phone number for the contact:contentReference[oaicite:122]{index=122}.
+          maxLength: 30
+          nullable: true
+        phoneExtension1:
+          type: string
+          description: Extension for the primary phone:contentReference[oaicite:123]{index=123}.
+          maxLength: 100
+          nullable: true
+        phoneType1:
+          type: string
+          description: Type of the primary phone (Home, Mobile, Work):contentReference[oaicite:124]{index=124}.
+          enum: [Home, Mobile, Work]
+          nullable: true
+        phoneNumber2:
+          type: string
+          description: Secondary phone number:contentReference[oaicite:125]{index=125}.
+          maxLength: 30
+          nullable: true
+        phoneExtension2:
+          type: string
+          description: Extension for secondary phone:contentReference[oaicite:126]{index=126}.
+          maxLength: 100
+          nullable: true
+        phoneType2:
+          type: string
+          enum: [Home, Mobile, Work]
+          description: Type of secondary phone:contentReference[oaicite:127]{index=127}.
+          nullable: true
+        phoneNumber3:
+          type: string
+          description: Tertiary phone number:contentReference[oaicite:128]{index=128}.
+          maxLength: 30
+          nullable: true
+        phoneExtension3:
+          type: string
+          description: Extension for tertiary phone:contentReference[oaicite:129]{index=129}.
+          maxLength: 100
+          nullable: true
+        phoneType3:
+          type: string
+          enum: [Home, Mobile, Work]
+          description: Type of tertiary phone:contentReference[oaicite:130]{index=130}.
+          nullable: true
+        emailAddress:
+          type: string
+          format: email
+          description: Primary email address of the contact:contentReference[oaicite:131]{index=131}.
+          maxLength: 100
+          nullable: true
+        crossReference:
+          type: string
+          description: External cross-reference ID for this lead/contact:contentReference[oaicite:132]{index=132}.
+          maxLength: 250
+          nullable: true
+        jobCategory:
+          type: string
+          description: Job category (e.g., Residential, Repair, etc.):contentReference[oaicite:133]{index=133}.
+          nullable: true
+        workType:
+          type: string
+          description: Work type (Insurance, Repair, Retail, etc.):contentReference[oaicite:134]{index=134}.
+          nullable: true
+        tradeType:
+          type: string
+          description: Trade type (if applicable, e.g. Roofing, Siding):contentReference[oaicite:135]{index=135}.
+          nullable: true
+        street:
+          type: string
+          description: Street address line 1:contentReference[oaicite:136]{index=136}.
+          maxLength: 250
+          nullable: true
+        street2:
+          type: string
+          description: Street address line 2 (apt/suite):contentReference[oaicite:137]{index=137}.
+          maxLength: 50
+          nullable: true
+        city:
+          type: string
+          description: City of the address:contentReference[oaicite:138]{index=138}.
+          maxLength: 50
+          nullable: true
+        state:
+          type: string
+          description: State/Province of the address:contentReference[oaicite:139]{index=139}.
+          maxLength: 50
+          nullable: true
+        zip:
+          type: string
+          description: ZIP or postal code:contentReference[oaicite:140]{index=140}.
+          maxLength: 50
+          nullable: true
+        country:
+          type: string
+          description: Country (e.g., "US"):contentReference[oaicite:141]{index=141}.
+          maxLength: 50
+          nullable: true
+        priority:
+          type: string
+          description: Priority level (Normal, High, Urgent):contentReference[oaicite:142]{index=142}.
+          enum: [Normal, High, Urgent]
+          nullable: true
+        notes:
+          type: string
+          description: Initial notes/comment for the lead (saved on message board):contentReference[oaicite:143]{index=143}.
+          maxLength: 1000
+          nullable: true
+        salesPerson:
+          type: string
+          format: email
+          description: Login email of AccuLynx user to assign lead to (if none, lead remains unassigned):contentReference[oaicite:144]{index=144}.
+          maxLength: 100
+          nullable: true
+        initialAppointmentDate:
+          type: string
+          format: date-time
+          description: Initial appointment date/time (ISO 8601). Defaults to company timezone if no timezone specified:contentReference[oaicite:145]{index=145}.
+          nullable: true
+    ContactCreationRequest:
+      type: object
+      required: [firstName]
+      properties:
+        firstName:
+          type: string
+          maxLength: 50
+        lastName:
+          type: string
+          maxLength: 50
+          nullable: true
+        companyName:
+          type: string
+          maxLength: 100
+          nullable: true
+        phoneNumbers:
+          type: array
+          description: List of phone numbers for the contact. Up to 3 numbers can be provided.
+          maxItems: 3
+          items:
+            type: object
+            properties:
+              number:
+                type: string
+                maxLength: 30
+              extension:
+                type: string
+                maxLength: 100
+                nullable: true
+              type:
+                type: string
+                enum: [Home, Mobile, Work]
+        emailAddress:
+          type: string
+          format: email
+          maxLength: 100
+          nullable: true
+        street:
+          type: string
+          maxLength: 250
+          nullable: true
+        street2:
+          type: string
+          maxLength: 50
+          nullable: true
+        city:
+          type: string
+          maxLength: 50
+          nullable: true
+        state:
+          type: string
+          maxLength: 50
+          nullable: true
+        zip:
+          type: string
+          maxLength: 50
+          nullable: true
+        country:
+          type: string
+          maxLength: 50
+          nullable: true
+        contactTypeId:
+          type: string
+          format: uuid
+          description: The ID of the contact type for this contact (from /contacts/types).
+          nullable: true
+        crossReference:
+          type: string
+          maxLength: 250
+          nullable: true
+    JobCreationRequest:
+      type: object
+      required: [contactId]
+      properties:
+        contactId:
+          type: string
+          format: uuid
+          description: ID of an existing contact to associate with the new job (required):contentReference[oaicite:146]{index=146}.
+        jobName:
+          type: string
+          description: Optional name/title for the job.
+          nullable: true
+        address:
+          type: object
+          description: Optional job address (if not using the contact's address).
+          properties:
+            street:
+              type: string
+            street2:
+              type: string
+              nullable: true
+            city:
+              type: string
+            state:
+              type: string
+            zip:
+              type: string
+            country:
+              type: string
+    SubscriptionCreateRequest:
+      type: object
+      required: [url, topics]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: The webhook listener URL that AccuLynx will POST events to:contentReference[oaicite:147]{index=147}.
+        topics:
+          type: array
+          description: List of event topic keys to subscribe to (e.g. job_created, job_updated, etc.):contentReference[oaicite:148]{index=148}.
+          items:
+            type: string
+        technicalContact:
+          type: string
+          description: Contact information (email or name) for the person responsible for this subscription.
+        secret:
+          type: string
+          description: Optional secret token. If not provided, AccuLynx will generate one for signing events.
+    Subscription:
+      type: object
+      properties:
+        subscriptionId:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        topics:
+          type: array
+          items:
+            type: string
+        technicalContact:
+          type: string
+        secret:
+          type: string
+          description: Secret used for signing webhook events.
+    WebhookEvent:
+      type: object
+      properties:
+        topicName:
+          type: string
+        eventDateTime:
+          type: string
+          format: date-time
+        eventId:
+          type: string
+        subscriptionId:
+          type: string
+        Event:
+          type: object
+          description: Event-specific data (varies by topic).
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+          nullable: true
+        details:
+          type: object
+          nullable: true
+paths:
+  # --- Leads (v1) ---
+  "/api/v1/leads":
+    post:
+      summary: "Create a new lead"
+      description: "Create a new lead in AccuLynx with provided contact and lead details:contentReference[oaicite:149]{index=149}:contentReference[oaicite:150]{index=150}."
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeadCreationRequest'
+      responses:
+        "201":
+          description: Lead created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leadId:
+                    type: string
+                    format: uuid
+                  message:
+                    type: string
+                    example: "Lead created successfully."
+        "400":
+          description: Bad request (missing or invalid fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Authentication error (invalid API key)
+  "/api/v1/leads/import-homeadvisor-lead":
+    post:
+      summary: "Import a new HomeAdvisor lead"
+      description: "Create a new lead from HomeAdvisor (Angi) data. The request body should contain the lead details as received from HomeAdvisor."
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              # Assuming similar structure to LeadCreationRequest
+              $ref: '#/components/schemas/LeadCreationRequest'
+      responses:
+        "201":
+          description: HomeAdvisor lead imported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leadId:
+                    type: string
+                    format: uuid
+        "400":
+          description: Bad request or missing fields
+        "401":
+          description: Authentication error
+  "/api/v2/leads/{leadId}/history":
+    get:
+      summary: "Get Lead history"
+      description: "Retrieve the history of changes for the specified lead."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: leadId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The unique identifier of the lead.
+      responses:
+        "200":
+          description: History retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leadId:
+                    type: string
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        dateTime:
+                          type: string
+                          format: date-time
+                        change:
+                          type: string
+                          description: Description of the change (status/milestone or field update)
+                        user:
+                          type: string
+                          description: User who made the change
+        "404":
+          description: Lead not found
+  # --- Contacts ---
+  "/api/v2/contacts":
+    get:
+      summary: "List contacts"
+      description: "Get a summary list of all contacts available to the company (basic contact info)."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of contacts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        contactId:
+                          type: string
+                          format: uuid
+                        firstName:
+                          type: string
+                        lastName:
+                          type: string
+                        companyName:
+                          type: string
+                        primaryPhone:
+                          type: string
+                        primaryEmail:
+                          type: string
+    post:
+      summary: "Create contact"
+      description: "Create a new contact (person or company) in AccuLynx."
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactCreationRequest'
+      responses:
+        "201":
+          description: Contact created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contactId:
+                    type: string
+                    format: uuid
+        "400":
+          description: Invalid input
+        "401":
+          description: Authentication error
+  "/api/v2/contacts/types":
+    get:
+      summary: "Get contact types"
+      description: "Retrieve the list of contact types available for categorizing contacts:contentReference[oaicite:151]{index=151}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of contact types
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contactTypes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        contactTypeId:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+  "/api/v2/contacts/search":
+    post:
+      summary: "Search contacts"
+      description: "Search for contacts matching given criteria (name, phone, email, etc.)."
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name or partial name to search for
+                email:
+                  type: string
+                  description: Email address to search for
+                phone:
+                  type: string
+                  description: Phone number to search for
+                # ... other possible search filters ...
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contacts:
+                    type: array
+                    items:
+                      # similar structure as contacts list
+                      type: object
+                      properties:
+                        contactId: { type: string }
+                        firstName: { type: string }
+                        lastName: { type: string }
+                        companyName: { type: string }
+                        primaryPhone: { type: string }
+                        primaryEmail: { type: string }
+  "/api/v2/contacts/{contactId}":
+    get:
+      summary: "Get contact by ID"
+      description: "Retrieve full details of a specific contact by ID."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Contact details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contactId: { type: string }
+                  firstName: { type: string }
+                  lastName: { type: string }
+                  companyName: { type: string, nullable: true }
+                  emails:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        emailId: { type: string }
+                        address: { type: string }
+                        isPrimary: { type: boolean }
+                  phones:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        phoneId: { type: string }
+                        number: { type: string }
+                        extension: { type: string, nullable: true }
+                        type: { type: string }
+                        isPrimary: { type: boolean }
+                  address:
+                    type: object
+                    properties:
+                      street: { type: string }
+                      street2: { type: string }
+                      city: { type: string }
+                      state: { type: string }
+                      zip: { type: string }
+                      country: { type: string }
+                  contactType:
+                    type: string
+                    nullable: true
+                  crossReference:
+                    type: string
+                    nullable: true
+        "404":
+          description: Contact not found
+  "/api/v2/contacts/{contactId}/emails":
+    get:
+      summary: "List contact emails"
+      description: "Retrieve all email addresses associated with the specified contact."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of emails
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  emails:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        emailId: { type: string }
+                        address: { type: string }
+                        isPrimary: { type: boolean }
+  "/api/v2/contacts/{contactId}/emails/{emailId}":
+    get:
+      summary: "Get an email address"
+      description: "Retrieve details of a specific email address record for the contact."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: emailId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Email address details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  emailId: { type: string }
+                  address: { type: string }
+                  isPrimary: { type: boolean }
+        "404":
+          description: Not found
+  "/api/v2/contacts/{contactId}/phones":
+    get:
+      summary: "List contact phone numbers"
+      description: "Retrieve all phone numbers associated with the specified contact."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of phone numbers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  phones:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        phoneId: { type: string }
+                        number: { type: string }
+                        extension: { type: string, nullable: true }
+                        type: { type: string }
+                        isPrimary: { type: boolean }
+  "/api/v2/contacts/{contactId}/phones/{phoneId}":
+    get:
+      summary: "Get a phone number"
+      description: "Retrieve details of a specific phone number record for the contact."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: phoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Phone number details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  phoneId: { type: string }
+                  number: { type: string }
+                  extension: { type: string, nullable: true }
+                  type: { type: string }
+                  isPrimary: { type: boolean }
+        "404":
+          description: Not found
+  # --- Diagnostics ---
+  "/api/v2/diagnostics":
+    get:
+      summary: "API server health check"
+      description: "Check if the API server is responsive:contentReference[oaicite:152]{index=152}. Returns a simple response if alive."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: API is responsive (e.g., returns 'OK' or similar)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: 
+                    type: string
+                    example: "OK"
+        "401":
+          description: Authentication error
+  # --- Calendar ---
+  "/api/v2/calendar":
+    get:
+      summary: "List calendar events"
+      description: "Retrieve calendar appointments/events (may support date filtering via query params)."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Start date filter for events
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: End date filter for events
+        - name: userId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter events by assigned user
+      responses:
+        "200":
+          description: List of calendar events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        appointmentId: { type: string }
+                        title: { type: string }
+                        startTime: { type: string, format: date-time }
+                        endTime: { type: string, format: date-time }
+                        relatedJobId: { type: string, nullable: true }
+                        type: { type: string, description: "Appointment type or description" }
+                        assignedUserId: { type: string, nullable: true }
+  "/api/v2/calendar/appointments/summary":
+    get:
+      summary: "Get appointments summary"
+      description: "Get a summary of appointments (e.g., count or overview of upcoming appointments)."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Summary retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalUpcoming: { type: integer }
+                  # other summary fields as applicable
+  "/api/v2/calendar/appointments/{appointmentId}":
+    get:
+      summary: "Get appointment details"
+      description: "Retrieve detailed information for a specific calendar appointment."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Appointment details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  appointmentId: { type: string }
+                  title: { type: string }
+                  startTime: { type: string, format: date-time }
+                  endTime: { type: string, format: date-time }
+                  location: { type: string, nullable: true }
+                  relatedJobId: { type: string, nullable: true }
+                  relatedLeadId: { type: string, nullable: true }
+                  assignedUser:
+                    type: object
+                    properties:
+                      userId: { type: string }
+                      name: { type: string }
+                  notes: { type: string, nullable: true }
+        "404":
+          description: Appointment not found
+  # --- Company Info & Settings ---
+  "/api/v2/company":
+    get:
+      summary: "Get company settings"
+      description: "Retrieve general company settings and information."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Company settings retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  companyId: { type: string }
+                  name: { type: string }
+                  timeZone: { type: string }
+                  # ... other general settings ...
+  "/api/v2/company/documents-folders":
+    get:
+      summary: "Get document folders"
+      description: "Retrieve the list of document folders configured in the company (for organizing job documents)."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Document folders list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        folderId: { type: string }
+                        name: { type: string }
+                        parentFolderId: { type: string, nullable: true }
+  "/api/v2/company/photo-video-tags":
+    get:
+      summary: "Get photo/video tags"
+      description: "Retrieve all photo & video tags available for labeling media:contentReference[oaicite:153]{index=153}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Tags retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tagId: { type: string }
+                        name: { type: string }
+  "/api/v2/company/account-types":
+    get:
+      summary: "Get active account types"
+      description: "List all active account types for financial transactions (payments):contentReference[oaicite:154]{index=154}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Account types list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accountTypes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        accountTypeId: { type: string }
+                        name: { type: string }
+                        isActive: { type: boolean }
+    # no post/put for account-types (read-only list)
+  "/api/v2/company/account-types/{accountTypeId}":
+    get:
+      summary: "Get account type by ID"
+      description: "Retrieve details of a specific account type (e.g., name, active flag)."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Account type details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accountTypeId: { type: string }
+                  name: { type: string }
+                  isActive: { type: boolean }
+        "404":
+          description: Not found
+  "/api/v2/company/countries":
+    get:
+      summary: "Get company countries"
+      description: "Retrieve list of countries relevant to the company (for addresses):contentReference[oaicite:155]{index=155}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Countries list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  countries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        countryCode: { type: string }
+                        name: { type: string }
+  "/api/v2/company/states":
+    get:
+      summary: "Get company states"
+      description: "Retrieve list of states/provinces relevant to the company (likely US states):contentReference[oaicite:156]{index=156}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: States list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  states:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        stateCode: { type: string }
+                        name: { type: string }
+                        countryCode: { type: string }
+  "/api/v2/company-settings/job-file-settings/insurance-companies":
+    get:
+      summary: "Get insurance companies"
+      description: "List insurance companies configured in Company Settings:contentReference[oaicite:157]{index=157}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Insurance companies list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  insuranceCompanies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        insuranceCompanyId: { type: string }
+                        name: { type: string }
+  "/api/v2/company-settings/job-file-settings/job-categories":
+    get:
+      summary: "Get job categories"
+      description: "List job categories available in the company settings:contentReference[oaicite:158]{index=158}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Job categories list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobCategories:
+                    type: array
+                    items:
+                      type: string
+  "/api/v2/company-settings/job-file-settings/trade-types":
+    get:
+      summary: "Get trade types"
+      description: "List trade types available (for leads/jobs):contentReference[oaicite:159]{index=159}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Trade types list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tradeTypes:
+                    type: array
+                    items:
+                      type: string
+  "/api/v2/company-settings/job-file-settings/work-types":
+    get:
+      summary: "Get work types"
+      description: "List work types available (Insurance, Retail, etc.):contentReference[oaicite:160]{index=160}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Work types list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workTypes:
+                    type: array
+                    items:
+                      type: string
+  "/api/v2/company-settings/lead-sources":
+    get:
+      summary: "Get active lead sources"
+      description: "Retrieve all active lead sources for the company (including parent-child relationships):contentReference[oaicite:161]{index=161}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Lead sources retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leadSources:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        leadSourceId: { type: string }
+                        name: { type: string }
+                        parentLeadSourceId: { type: string, nullable: true }
+                        hasChildren: { type: boolean }
+  "/api/v2/company-settings/lead-sources/{leadSourceId}":
+    get:
+      summary: "Get lead source by ID"
+      description: "Retrieve a specific lead source by ID, including children if it's a parent or parent reference if it's a child:contentReference[oaicite:162]{index=162}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: leadSourceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lead source details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leadSourceId: { type: string }
+                  name: { type: string }
+                  parentLeadSourceId: { type: string, nullable: true }
+                  children:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        leadSourceId: { type: string }
+                        name: { type: string }
+        "404":
+          description: Not found
+  "/api/v2/company-settings/child-lead-sources/{childLeadSourceId}":
+    get:
+      summary: "Get child lead source by ID"
+      description: "Retrieve a child lead source by ID, including reference to its parent:contentReference[oaicite:163]{index=163}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: childLeadSourceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Child lead source details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  leadSourceId: { type: string }
+                  name: { type: string }
+                  parentLeadSourceId: { type: string }
+                  parentName: { type: string }
+        "404":
+          description: Not found
+  "/api/v2/acculynx/countries":
+    get:
+      summary: "Get AccuLynx-supported countries"
+      description: "Retrieve the full list of countries supported by AccuLynx (global list):contentReference[oaicite:164]{index=164}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Countries list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  countries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        countryId: { type: string }
+                        name: { type: string }
+                        isoCode: { type: string }
+  "/api/v2/acculynx/countries/{countryId}":
+    get:
+      summary: "Get country by ID"
+      description: "Retrieve details of a specific country (and possibly its states list)."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: countryId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Country details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  countryId: { type: string }
+                  name: { type: string }
+                  isoCode: { type: string }
+                  states:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        stateId: { type: string }
+                        name: { type: string }
+                        code: { type: string }
+  "/api/v2/acculynx/states":
+    get:
+      summary: "Get all states"
+      description: "Retrieve all states/provinces across all supported countries."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: States list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  states:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        stateId: { type: string }
+                        name: { type: string }
+                        code: { type: string }
+                        countryId: { type: string }
+  "/api/v2/acculynx/states/{stateId}":
+    get:
+      summary: "Get state by ID"
+      description: "Retrieve details of a specific state or region."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: stateId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: State details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stateId: { type: string }
+                  name: { type: string }
+                  code: { type: string }
+                  countryId: { type: string }
+  # --- Jobs ---
+  "/api/v2/jobs":
+    get:
+      summary: "List jobs"
+      description: "Retrieve a list of jobs (projects). Use query params to filter results (e.g. assignment=unassigned to include unassigned leads):contentReference[oaicite:165]{index=165}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: assignment
+          in: query
+          schema:
+            type: string
+            enum: [unassigned]
+          description: If set to 'unassigned', include unassigned leads in the results:contentReference[oaicite:166]{index=166}.
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: Page number for pagination (if applicable).
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+          description: Page size for pagination.
+      responses:
+        "200":
+          description: Jobs list retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        jobId: { type: string }
+                        jobNumber: { type: string, nullable: true }
+                        contactName: { type: string }
+                        address: { type: string }
+                        currentMilestone: { type: string }
+                        currentStatus: { type: string, nullable: true }
+                        priority: { type: string }
+                        salesOwner: { type: string, nullable: true }
+                        # ... other summary fields ...
+    post:
+      summary: "Create job"
+      description: "Create a new job (project) in AccuLynx. Only a contactId is required:contentReference[oaicite:167]{index=167}; the job will start as an unassigned lead."
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreationRequest'
+      responses:
+        "201":
+          description: Job created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    format: uuid
+                  milestone:
+                    type: string
+                    example: "Lead (Unassigned)"
+        "400":
+          description: Invalid input (e.g., contactId missing or not found)
+        "401":
+          description: Authentication error
+  "/api/v2/jobs/search":
+    post:
+      summary: "Search jobs"
+      description: "Search for jobs using complex filters."
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                milestone:
+                  type: string
+                dateFrom:
+                  type: string
+                  format: date
+                dateTo:
+                  type: string
+                  format: date
+                # etc. depending on allowed search fields
+      responses:
+        "200":
+          description: Jobs search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      # similar structure as job list
+                      type: object
+                      properties:
+                        jobId: { type: string }
+                        contactName: { type: string }
+                        currentMilestone: { type: string }
+                        currentStatus: { type: string, nullable: true }
+                        priority: { type: string }
+  "/api/v2/jobs/{jobId}":
+    get:
+      summary: "Get job by ID"
+      description: "Retrieve detailed information for a specific job (project):contentReference[oaicite:168]{index=168}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string }
+                  jobNumber: { type: string }
+                  status: { type: string }
+                  milestone: { type: string }
+                  milestoneId: { type: integer }
+                  address: 
+                    type: object
+                    properties:
+                      street: { type: string }
+                      city: { type: string }
+                      state: { type: string }
+                      zip: { type: string }
+                  contact:
+                    type: object
+                    properties:
+                      contactId: { type: string }
+                      name: { type: string }
+                      phone: { type: string }
+                      email: { type: string }
+                  priority: { type: string }
+                  insurance:
+                    type: object
+                    properties:
+                      insuranceCompanyId: { type: string, nullable: true }
+                      insuranceCompanyName: { type: string, nullable: true }
+                      claimNumber: { type: string, nullable: true }
+                  financial:
+                    type: object
+                    properties:
+                      financialId: { type: string }
+                      approvedJobValue: { type: number }
+                      totalPaid: { type: number }
+                      totalDue: { type: number }
+                  representatives:
+                    type: object
+                    properties:
+                      companyRepresentative: { type: string, nullable: true }
+                      salesOwner: { type: string, nullable: true }
+                      arOwner: { type: string, nullable: true }
+                  # ... other fields ...
+        "404":
+          description: Job not found
+  "/api/v2/jobs/{jobId}/adjuster":
+    get:
+      summary: "Get job adjuster info"
+      description: "Retrieve insurance adjuster information for the specified job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Adjuster info returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  adjusterName: { type: string, nullable: true }
+                  adjusterPhone: { type: string, nullable: true }
+                  adjusterEmail: { type: string, nullable: true }
+                  insuranceCompanyName: { type: string, nullable: true }
+        "404":
+          description: Job not found or no adjuster info
+  "/api/v2/jobs/{jobId}/contacts":
+    get:
+      summary: "List job contacts"
+      description: "Retrieve all contacts associated with the specified job (primary and additional contacts)."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Job contacts list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contacts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        contactId: { type: string }
+                        name: { type: string }
+                        role: { type: string, description: "Role in the job (e.g., Primary, Adjuster, etc.)" }
+                        phone: { type: string }
+                        email: { type: string }
+  "/api/v2/jobs/{jobId}/contacts/{contactId}":
+    get:
+      summary: "Get job contact"
+      description: "Retrieve details for a specific contact on the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: contactId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Contact detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contactId: { type: string }
+                  name: { type: string }
+                  role: { type: string }
+                  phone: { type: string }
+                  email: { type: string }
+        "404":
+          description: Not found
+  "/api/v2/jobs/{jobId}/contract-worksheet":
+    get:
+      summary: "Get job contract worksheet"
+      description: "Retrieve the contract worksheet (financial summary) for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Contract worksheet data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  contractPrice: { type: number }
+                  upgrades: { type: number }
+                  discounts: { type: number }
+                  # ... other financial summary fields ...
+        "404":
+          description: Not found
+  "/api/v2/jobs/{jobId}/documents":
+    post:
+      summary: "Add job document"
+      description: "Upload or attach a document to the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: folderId
+          in: query
+          schema: { type: string }
+          description: Optional folder ID to put the document in (obtained from /company/documents-folders).
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                fileName:
+                  type: string
+                  description: Optional custom filename
+                url:
+                  type: string
+                  format: uri
+                  description: Alternatively, a URL from which AccuLynx should fetch the document.
+      responses:
+        "201":
+          description: Document added to job
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documentId: { type: string }
+                  name: { type: string }
+        "400":
+          description: Bad request (file missing, etc.)
+  "/api/v2/jobs/{jobId}/photos":
+    post:
+      summary: "Upload job photo/video"
+      description: "Upload a photo or video to the job's media gallery:contentReference[oaicite:169]{index=169}."
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                fileName:
+                  type: string
+                tagId:
+                  type: string
+                  description: Optional tag to assign (from /company/photo-video-tags).
+      responses:
+        "201":
+          description: Photo/Video uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mediaId: { type: string }
+                  fileType: { type: string, description: "Photo or Video" }
+        "400":
+          description: Bad input
+  "/api/v2/jobs/{jobId}/measurement-order":
+    post:
+      summary: "Create measurement order"
+      description: "Order an external measurement for the job (e.g., aerial measurement report)."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: vendor
+          in: query
+          schema: { type: string }
+          description: Optional vendor name if multiple measurement services available.
+      responses:
+        "202":
+          description: Measurement order placed (processing)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: "Order submitted" }
+        "400":
+          description: Bad request (address missing, etc.)
+  "/api/v2/jobs/{jobId}/measurements/files":
+    get:
+      summary: "Get measurement files"
+      description: "Retrieve measurement report files (PDF/JSON) for the job, if any:contentReference[oaicite:170]{index=170}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Measurement files list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        fileId: { type: string }
+                        fileName: { type: string }
+                        fileType: { type: string, description: "e.g., PDF or JSON" }
+                        downloadUrl: { type: string }
+  "/api/v2/jobs/{jobId}/estimates":
+    get:
+      summary: "Get job estimates"
+      description: "Retrieve a list of estimates associated with the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Estimates list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  estimates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        estimateId: { type: string }
+                        name: { type: string }
+                        total: { type: number }
+                        status: { type: string }
+  "/api/v2/jobs/{jobId}/invoices":
+    get:
+      summary: "Get job invoices"
+      description: "Retrieve a list of invoices associated with the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Invoices list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        invoiceId: { type: string }
+                        invoiceNumber: { type: string }
+                        total: { type: number }
+                        status: { type: string }
+  "/api/v2/jobs/{jobId}/financials":
+    get:
+      summary: "Get job financials summary"
+      description: "Retrieve the financial summary for the job (approved value, totals, etc.):contentReference[oaicite:171]{index=171}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Financial summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  financialId: { type: string }
+                  approvedJobValue: { type: number }
+                  totalCost: { type: number }
+                  totalPaymentsReceived: { type: number }
+                  totalPaymentsPaid: { type: number }
+                  totalAdditionalExpenses: { type: number }
+        "404":
+          description: Not found
+  "/api/v2/jobs/{jobId}/accounting/integration-status":
+    get:
+      summary: "Get accounting integration status"
+      description: "Check the accounting sync status of the job (for QuickBooks or other integration):contentReference[oaicite:172]{index=172}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Sync status info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  synced: { type: boolean }
+                  lastSyncDate: { type: string, format: date-time, nullable: true }
+                  syncStatus: { type: string, description: "e.g., PENDING, SUCCESS, FAILED" }
+                  message: { type: string, nullable: true }
+  "/api/v2/jobs/{jobId}/history":
+    get:
+      summary: "Get job change history"
+      description: "Retrieve the audit log of changes for the job (milestone changes, field updates, etc.):contentReference[oaicite:173]{index=173}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Change history list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  history:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        dateTime: { type: string, format: date-time }
+                        user: { type: string }
+                        action: { type: string, description: "Description of what changed" }
+  "/api/v2/jobs/{jobId}/appointments/initial":
+    get:
+      summary: "Get initial appointment"
+      description: "Retrieve the initial appointment scheduled for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Initial appointment details (if any)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dateTime: { type: string, format: date-time }
+                  assignedUserId: { type: string, nullable: true }
+                  notes: { type: string, nullable: true }
+        "404":
+          description: No appointment or job not found
+    put:
+      summary: "Add/Update initial appointment"
+      description: "Schedule or update the initial appointment for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dateTime:
+                  type: string
+                  format: date-time
+                assignedUserId:
+                  type: string
+                  format: uuid
+                  nullable: true
+                notes:
+                  type: string
+                  nullable: true
+      responses:
+        "200":
+          description: Appointment set/updated
+        "404":
+          description: Job not found
+  "/api/v2/jobs/{jobId}/insurance":
+    get:
+      summary: "Get job insurance info"
+      description: "Retrieve insurance details (company, claim number, etc.) for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Insurance info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  insuranceCompanyId: { type: string, nullable: true }
+                  insuranceCompanyName: { type: string, nullable: true }
+                  policyNumber: { type: string, nullable: true }
+                  claimNumber: { type: string, nullable: true }
+                  adjusterName: { type: string, nullable: true }
+                  adjusterPhone: { type: string, nullable: true }
+        "404":
+          description: Not found
+  "/api/v2/jobs/{jobId}/insurance/insurance-company":
+    put:
+      summary: "Set insurance company"
+      description: "Assign an insurance company to the job:contentReference[oaicite:174]{index=174}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                insuranceCompanyId:
+                  type: string
+                  description: ID of the insurance company (from /company-settings/job-file-settings/insurance-companies).
+      responses:
+        "200":
+          description: Insurance company set
+        "400":
+          description: Invalid insuranceCompanyId
+        "404":
+          description: Job not found
+  "/api/v2/jobs/{jobId}/messages":
+    post:
+      summary: "Create job message"
+      description: "Post a new message/comment to the job's message board (starts a new thread):contentReference[oaicite:175]{index=175}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                subject:
+                  type: string
+                  nullable: true
+                body:
+                  type: string
+                  description: The text of the message to post.
+      responses:
+        "201":
+          description: Message posted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  threadId: { type: string }
+                  messageId: { type: string }
+                  timestamp: { type: string }
+        "404":
+          description: Job not found
+  "/api/v2/jobs/{jobId}/messages/{threadId}/reply":
+    post:
+      summary: "Reply to job message"
+      description: "Add a reply to an existing message thread on the job:contentReference[oaicite:176]{index=176}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: threadId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                body:
+                  type: string
+                  description: The reply message text.
+      responses:
+        "201":
+          description: Reply posted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageId: { type: string }
+                  timestamp: { type: string }
+        "404":
+          description: Thread or job not found
+  "/api/v2/jobs/{jobId}/milestones/history":
+    get:
+      summary: "Get milestone history"
+      description: "Retrieve the history of milestone changes for the job (previous milestones, dates, etc.)."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Milestone history list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  milestoneHistory:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        milestoneName: { type: string }
+                        reachedDate: { type: string, format: date-time }
+                        changedBy: { type: string }
+  "/api/v2/jobs/{jobId}/milestones/{milestoneId}":
+    get:
+      summary: "Get milestone by ID"
+      description: "Retrieve details of a specific milestone of the job (including current status if applicable):contentReference[oaicite:177]{index=177}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: milestoneId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Milestone details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  milestoneId: { type: integer }
+                  milestoneName: { type: string }
+                  currentStatusId: { type: integer, nullable: true }
+                  currentStatusName: { type: string, nullable: true }
+                  reachedDate: { type: string, format: date-time, nullable: true }
+        "404":
+          description: Not found (job or milestone)
+  "/api/v2/jobs/{jobId}/milestones/{milestoneId}/statuses/{statusId}":
+    get:
+      summary: "Get status by ID (within milestone)"
+      description: "Retrieve details of a specific status within a milestone for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: milestoneId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: statusId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Status details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusId: { type: integer }
+                  statusName: { type: string }
+                  isCurrent: { type: boolean }
+                  completedDate: { type: string, format: date-time, nullable: true }
+        "404":
+          description: Not found
+  "/api/v2/jobs/{jobId}/milestones/current":
+    get:
+      summary: "Get current milestone"
+      description: "Retrieve the job's current milestone (and status if applicable):contentReference[oaicite:178]{index=178}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Current milestone info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  milestoneId: { type: integer }
+                  milestoneName: { type: string }
+                  currentStatusId: { type: integer, nullable: true }
+                  currentStatusName: { type: string, nullable: true }
+        "404":
+          description: Job not found
+  "/api/v2/jobs/{jobId}/payments":
+    get:
+      summary: "Get job payments"
+      description: "Retrieve all payment records (received, paid, expenses) for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Payments list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        paymentId: { type: string }
+                        type: { type: string, description: "Received, Paid, or Expense" }
+                        amount: { type: number }
+                        date: { type: string, format: date }
+                        accountType: { type: string }
+                        note: { type: string, nullable: true }
+  "/api/v2/jobs/{jobId}/payments/overview":
+    get:
+      summary: "Get job payments overview"
+      description: "Retrieve a summary of payments for the job (totals of each type)."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Payment overview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalReceived: { type: number }
+                  totalPaid: { type: number }
+                  totalExpenses: { type: number }
+                  balance: { type: number, description: "totalReceived - totalPaid - totalExpenses" }
+        "404":
+          description: Not found
+  "/api/v2/jobs/{jobId}/payments/received":
+    post:
+      summary: "Record payment received"
+      description: "Create a new payment received (incoming payment from customer) for the job:contentReference[oaicite:179]{index=179}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, accountTypeId, date]
+              properties:
+                amount:
+                  type: number
+                date:
+                  type: string
+                  format: date
+                accountTypeId:
+                  type: string
+                  description: ID of the account type for this payment:contentReference[oaicite:180]{index=180}.
+                method:
+                  type: string
+                  nullable: true
+                  description: Payment method (Cash/Check/Card etc.)
+                reference:
+                  type: string
+                  nullable: true
+                  description: Reference number or note
+      responses:
+        "201":
+          description: Payment received recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentId: { type: string }
+        "400":
+          description: Bad request (invalid data or accountTypeId)
+        "404":
+          description: Job not found
+  "/api/v2/jobs/{jobId}/payments/paid":
+    post:
+      summary: "Record payment paid"
+      description: "Create a new payment paid out (expense or disbursement) for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, accountTypeId, date]
+              properties:
+                amount: { type: number }
+                date: { type: string, format: date }
+                accountTypeId: { type: string }
+                payee: { type: string, nullable: true, description: "Who was paid" }
+                note: { type: string, nullable: true }
+      responses:
+        "201":
+          description: Payment paid recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  paymentId: { type: string }
+        "400":
+          description: Bad request
+        "404":
+          description: Job not found
+  "/api/v2/jobs/{jobId}/payments/expenses":
+    post:
+      summary: "Record additional job expense"
+      description: "Create a new additional expense entry for the job (affecting job costing):contentReference[oaicite:181]{index=181}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount, accountTypeId, date]
+              properties:
+                amount: { type: number }
+                date: { type: string, format: date }
+                accountTypeId: { type: string }
+                description: { type: string, nullable: true }
+      responses:
+        "201":
+          description: Expense recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  expenseId: { type: string }
+        "400":
+          description: Bad request
+        "404":
+          description: Job not found
+  "/api/v2/jobs/{jobId}/representatives":
+    get:
+      summary: "List job representatives"
+      description: "Retrieve all company representatives (roles and assigned users) for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Representatives list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  representatives:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        role: { type: string, description: "Role name (Company Representative, Sales Owner, A/R Owner, etc.)" }
+                        userId: { type: string, nullable: true }
+                        userName: { type: string, nullable: true }
+  "/api/v2/jobs/{jobId}/representatives/company":
+    get:
+      summary: "Get Company Representative"
+      description: "Get the company representative assigned to the job (if any)."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Company rep info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId: { type: string, nullable: true }
+                  userName: { type: string, nullable: true }
+    post:
+      summary: "Update Company Representative"
+      description: "Assign or update the Company Representative for the job:contentReference[oaicite:182]{index=182}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                  description: ID of the user to assign as company rep (use null to remove assignment).
+      responses:
+        "200":
+          description: Company rep updated
+        "404":
+          description: Job not found or user not found
+  "/api/v2/jobs/{jobId}/representatives/sales":
+    get:
+      summary: "Get Sales Owner"
+      description: "Get the sales owner (salesperson) for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Sales owner info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId: { type: string, nullable: true }
+                  userName: { type: string, nullable: true }
+    post:
+      summary: "Add/Update Sales Owner"
+      description: "Assign a user as the Sales Owner for the job:contentReference[oaicite:183]{index=183}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId: 
+                  type: string
+                  format: uuid
+                  description: "User ID of the salesperson to assign (null to remove)."
+      responses:
+        "200":
+          description: Sales owner updated
+    delete:
+      summary: "Delete Sales Owner"
+      description: "Remove the Sales Owner assignment from the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Sales owner removed
+  "/api/v2/jobs/{jobId}/representatives/ar":
+    get:
+      summary: "Get A/R Owner"
+      description: "Get the Accounts Receivable (A/R) owner for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: A/R owner info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId: { type: string, nullable: true }
+                  userName: { type: string, nullable: true }
+    post:
+      summary: "Add/Update A/R Owner"
+      description: "Assign a user as the A/R owner for the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: A/R owner updated
+    delete:
+      summary: "Delete A/R Owner"
+      description: "Remove the A/R owner assignment from the job."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: A/R owner removed
+  # --- Reports ---
+  "/api/v2/reports/schedules/{scheduleId}/instances":
+    get:
+      summary: "List report instances"
+      description: "Get a list of generated report instances for the given report schedule ID:contentReference[oaicite:184]{index=184}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Report instances list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instances:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        instanceId: { type: string }
+                        runDate: { type: string, format: date-time }
+                        status: { type: string }
+                        reportName: { type: string }
+  "/api/v2/reports/instances/{instanceId}":
+    get:
+      summary: "Get report by instance"
+      description: "Retrieve the report output for a specific report instance ID:contentReference[oaicite:185]{index=185}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Report content
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instanceId: { type: string }
+                  reportName: { type: string }
+                  generatedDate: { type: string, format: date-time }
+                  format: { type: string, description: "e.g., PDF, CSV" }
+                  data:
+                    type: string
+                    description: "Base64-encoded or URL link to report file"
+  "/api/v2/reports/schedules/{scheduleId}/latest-instance":
+    get:
+      summary: "Get latest report instance"
+      description: "Retrieve the most recent run (instance) of the specified report schedule:contentReference[oaicite:186]{index=186}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Latest report instance info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  instanceId: { type: string }
+                  runDate: { type: string }
+                  status: { type: string }
+                  reportName: { type: string }
+        "404":
+          description: Schedule not found or no instances
+  "/api/v2/reports/instances/{instanceId}/recipients":
+    get:
+      summary: "List report instance recipients"
+      description: "Get the list of recipients for a specific report instance (who the report was sent to):contentReference[oaicite:187]{index=187}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Recipients list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recipients:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        recipientId: { type: string }
+                        email: { type: string }
+                        deliveryStatus: { type: string }
+                        opened: { type: boolean }
+  "/api/v2/reports/instances/{instanceId}/recipients/{recipientId}":
+    get:
+      summary: "Get report recipient"
+      description: "Retrieve details for a specific recipient of a report instance (delivery status etc.):contentReference[oaicite:188]{index=188}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: recipientId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Recipient details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recipientId: { type: string }
+                  email: { type: string }
+                  deliveryStatus: { type: string }
+                  opened: { type: boolean }
+  # --- Invoices ---
+  "/api/v2/invoices/{invoiceId}":
+    get:
+      summary: "Get invoice"
+      description: "Retrieve details of a specific invoice by ID."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Invoice details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoiceId: { type: string }
+                  invoiceNumber: { type: string }
+                  jobId: { type: string }
+                  amount: { type: number }
+                  status: { type: string }
+                  issueDate: { type: string, format: date }
+                  dueDate: { type: string, format: date, nullable: true }
+                  lineItems:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        description: { type: string }
+                        quantity: { type: number }
+                        unitPrice: { type: number }
+                        total: { type: number }
+        "404":
+          description: Invoice not found
+  # --- Financials ---
+  "/api/v2/financials/{financialId}":
+    get:
+      summary: "Get financials by ID"
+      description: "Retrieve comprehensive financial info for the given financial record (job).:contentReference[oaicite:189]{index=189}"
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: financialId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Financial details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  financialId: { type: string }
+                  jobId: { type: string }
+                  approvedJobValue: { type: number }
+                  totalCost: { type: number }
+                  profit: { type: number }
+                  # ... other overall financial metrics ...
+        "404":
+          description: Not found
+  "/api/v2/financials/{financialId}/worksheet":
+    get:
+      summary: "Get financial worksheet"
+      description: "Retrieve the financial worksheet details for the given financial record:contentReference[oaicite:190]{index=190}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: financialId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Worksheet data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  financialId: { type: string }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        category: { type: string }
+                        description: { type: string }
+                        amount: { type: number }
+                  subtotal: { type: number }
+                  overhead: { type: number }
+                  commission: { type: number }
+                  totalCost: { type: number }
+        "404":
+          description: Not found
+  "/api/v2/financials/{financialId}/amendments":
+    get:
+      summary: "Get financial amendments"
+      description: "Retrieve all amendments (change orders) for the given financial record:contentReference[oaicite:191]{index=191}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: financialId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Amendments list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  amendments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        amendmentId: { type: string }
+                        description: { type: string }
+                        amount: { type: number }
+                        date: { type: string, format: date }
+                        status: { type: string }
+        "404":
+          description: Not found
+  "/api/v2/financials/{financialId}/amendments/{amendmentId}":
+    get:
+      summary: "Get financial amendment"
+      description: "Retrieve details of a specific amendment (change order) by ID."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: financialId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: amendmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Amendment details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  amendmentId: { type: string }
+                  description: { type: string }
+                  amount: { type: number }
+                  date: { type: string, format: date }
+                  status: { type: string }
+                  lineItems:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        description: { type: string }
+                        amount: { type: number }
+        "404":
+          description: Not found
+  # --- Supplements ---
+  "/api/v2/supplements":
+    get:
+      summary: "Get all supplements"
+      description: "Retrieve all supplements across the company (pending/approved supplements):contentReference[oaicite:192]{index=192}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Supplements list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  supplements:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        supplementId: { type: string }
+                        jobId: { type: string }
+                        status: { type: string }
+                        totalRequested: { type: number }
+                        totalApproved: { type: number }
+                        createdDate: { type: string, format: date }
+  "/api/v2/supplements/{supplementId}":
+    get:
+      summary: "Get supplement by ID"
+      description: "Retrieve details of a specific supplement by ID:contentReference[oaicite:193]{index=193}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: supplementId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Supplement details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  supplementId: { type: string }
+                  jobId: { type: string }
+                  status: { type: string }
+                  totalRequested: { type: number }
+                  totalApproved: { type: number }
+                  notes: { type: string, nullable: true }
+        "404":
+          description: Not found
+  "/api/v2/supplements/{supplementId}/items":
+    get:
+      summary: "Get supplement items"
+      description: "Retrieve the line items for the given supplement:contentReference[oaicite:194]{index=194}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: supplementId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Supplement items returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        description: { type: string }
+                        amountRequested: { type: number }
+                        amountApproved: { type: number }
+        "404":
+          description: Not found
+  "/api/v2/supplements/{supplementId}/notations":
+    get:
+      summary: "Get supplement notations"
+      description: "Retrieve the notations/notes for the given supplement:contentReference[oaicite:195]{index=195}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: supplementId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Supplement notations returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        note: { type: string }
+                        author: { type: string }
+                        date: { type: string, format: date-time }
+        "404":
+          description: Not found
+  # --- Users ---
+  "/api/v2/users":
+    get:
+      summary: "List users"
+      description: "Retrieve a list of all users (employees) in the company."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        userId: { type: string }
+                        name: { type: string }
+                        email: { type: string }
+                        isActive: { type: boolean }
+                        role: { type: string }
+  "/api/v2/users/{userId}":
+    get:
+      summary: "Get user"
+      description: "Retrieve details of a specific user (by userId)."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId: { type: string }
+                  name: { type: string }
+                  email: { type: string }
+                  isActive: { type: boolean }
+                  roles: { type: array, items: { type: string } }
+        "404":
+          description: User not found
+  # --- Webhooks ---
+  "/webhooks/v2/subscriptions":
+    post:
+      summary: "Create webhook subscription"
+      description: "Create a new webhook subscription to listen for events:contentReference[oaicite:196]{index=196}."
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscriptionCreateRequest"
+      responses:
+        "201":
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "400":
+          description: Invalid request (e.g., bad URL or topics)
+    get:
+      summary: "List webhook subscriptions"
+      description: "Get all active webhook subscriptions for the company:contentReference[oaicite:197]{index=197}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Subscriptions listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscriptions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Subscription"
+  "/webhooks/v2/subscriptions/{subscriptionId}":
+    get:
+      summary: "Get webhook subscription"
+      description: "Retrieve details of a specific webhook subscription:contentReference[oaicite:198]{index=198}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Subscription details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "404":
+          description: Subscription not found
+    put:
+      summary: "Update webhook subscription"
+      description: "Update an existing subscription's topics or contact info:contentReference[oaicite:199]{index=199}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: { type: string, format: uri, nullable: true }
+                topics: { type: array, items: { type: string }, nullable: true }
+                technicalContact: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Subscription updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "404":
+          description: Subscription not found
+    delete:
+      summary: "Delete webhook subscription"
+      description: "Cancel a webhook subscription (stop receiving events):contentReference[oaicite:200]{index=200}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Subscription deleted
+        "404":
+          description: Subscription not found
+  "/webhooks/v2/subscriptions/{subscriptionId}/test-event":
+    post:
+      summary: "Send test webhook event"
+      description: "Trigger a test event to be sent to the subscription's listener (for testing):contentReference[oaicite:201]{index=201}."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: subscriptionId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                topic:
+                  type: string
+                  description: Topic to test (e.g., job_created):contentReference[oaicite:202]{index=202}.
+      responses:
+        "200":
+          description: Test event sent (response will indicate success)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "Test event delivered." }
+        "404":
+          description: Subscription not found
+  "/webhooks/v2/topics":
+    get:
+      summary: "List webhook topics"
+      description: "Retrieve all available webhook event topics that can be subscribed to:contentReference[oaicite:203]{index=203}."
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Topics listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topics:
+                    type: array
+                    items:
+                      type: string
+                      description: Event topic key (e.g., job_created, job_updated, etc.)
+security:
+  - BearerAuth: []

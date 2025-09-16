@@ -1,0 +1,36 @@
+{
+  "service": "companycam",
+  "openapiRef": "../../../assets/openapi/companycam.yaml",
+  "enabled": true,
+  "synonyms": ["company cam", "companycam", "ccam", "photos app", "photo app"],
+  "operations": {
+    "search_project": {
+      "summary": "Find a project by name/address",
+      "method": "GET",
+      "path": "/v1/projects",
+      "query": ["name", "address"]
+    },
+    "create_project_conversation": {
+      "summary": "Create conversation on project",
+      "method": "POST",
+      "path": "/v1/projects/{project_id}/conversations",
+      "body": ["message"]
+    },
+    "create_project": {
+      "summary": "Create a new project",
+      "method": "POST",
+      "path": "/v1/projects",
+      "body": ["name", "address", "description"]
+    },
+    "get_project": {
+      "summary": "Get project details",
+      "method": "GET",
+      "path": "/v1/projects/{project_id}"
+    },
+    "list_projects": {
+      "summary": "List all projects",
+      "method": "GET",
+      "path": "/v1/projects"
+    }
+  }
+}

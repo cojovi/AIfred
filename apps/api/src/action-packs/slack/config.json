@@ -1,0 +1,37 @@
+{
+  "service": "slack",
+  "openapiRef": "../../../assets/openapi/slack.yaml",
+  "enabled": true,
+  "synonyms": ["slack", "chat", "message", "messaging"],
+  "operations": {
+    "send_message": {
+      "summary": "Send a message to a channel",
+      "method": "POST",
+      "path": "/api/chat.postMessage",
+      "body": ["channel", "text"]
+    },
+    "create_channel": {
+      "summary": "Create a new channel",
+      "method": "POST",
+      "path": "/api/conversations.create",
+      "body": ["name", "is_private"]
+    },
+    "invite_users": {
+      "summary": "Invite users to a channel",
+      "method": "POST",
+      "path": "/api/conversations.invite",
+      "body": ["channel", "users"]
+    },
+    "list_channels": {
+      "summary": "List all channels",
+      "method": "GET",
+      "path": "/api/conversations.list"
+    },
+    "get_channel": {
+      "summary": "Get channel information",
+      "method": "GET",
+      "path": "/api/conversations.info",
+      "query": ["channel"]
+    }
+  }
+}

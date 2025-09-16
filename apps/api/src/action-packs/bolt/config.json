@@ -1,0 +1,36 @@
+{
+  "service": "bolt",
+  "openapiRef": "../../../assets/openapi/eci-bolt.yaml",
+  "enabled": true,
+  "synonyms": ["bolt", "eci bolt", "eci", "estimating"],
+  "operations": {
+    "create_estimate": {
+      "summary": "Create a new estimate",
+      "method": "POST",
+      "path": "/api/estimates",
+      "body": ["project_details", "line_items"]
+    },
+    "update_estimate": {
+      "summary": "Update an existing estimate",
+      "method": "PUT",
+      "path": "/api/estimates/{estimate_id}",
+      "body": ["updates"]
+    },
+    "search_estimate": {
+      "summary": "Search for estimates",
+      "method": "GET",
+      "path": "/api/estimates",
+      "query": ["project_name", "customer_name", "status"]
+    },
+    "get_estimate": {
+      "summary": "Get estimate details",
+      "method": "GET",
+      "path": "/api/estimates/{estimate_id}"
+    },
+    "list_estimates": {
+      "summary": "List all estimates",
+      "method": "GET",
+      "path": "/api/estimates"
+    }
+  }
+}
